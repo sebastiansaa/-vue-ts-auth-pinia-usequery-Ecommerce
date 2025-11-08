@@ -1,10 +1,18 @@
 # practicaeco
 
-Ecommerce simple hecho con Vue 3, Pinia y Vite. Esta app permite explorar productos y categorías, agregar al carrito y navegar entre secciones, todo sin autenticación ni lógica de usuario. El enfoque es una arquitectura limpia, navegación clara y código mantenible.
+**Ecommerce moderno sin usuarios, solo comprar.**
 
-## Descripción
+Este proyecto es una tienda online construida con Vue 3, Pinia, Vite y TanStack Query, que permite explorar productos, navegar por categorías, agregar al carrito y simular el proceso de compra y pago, todo sin autenticación ni gestión de usuarios. El objetivo es demostrar una arquitectura limpia, modular y profesional, enfocada en la experiencia de compra directa y el código mantenible.
 
-Esta aplicación es una tienda online de ejemplo, pensada para practicar buenas prácticas de arquitectura en Vue 3. No incluye autenticación ni gestión de usuarios: cualquier visitante puede navegar, buscar productos y simular compras. El objetivo es mantener el código simple, directo y fácil de mantener.
+## Características principales
+
+- Navegación profesional y dinámica por categorías (consumidas desde API)
+- Visualización de productos filtrados por categoría
+- Carrito de compras funcional
+- Simulación de proceso de pago
+- Sin registro ni login: cualquier visitante puede comprar
+- Arquitectura limpia, modular y DRY
+- Uso de Vue 3, Pinia, Vue Router, TanStack Query, Axios, Vee-Validate, Zod, Toastification y Heroicons
 
 ## Requisitos
 
