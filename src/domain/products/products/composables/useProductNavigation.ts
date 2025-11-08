@@ -1,6 +1,4 @@
-/**
- * Encapsula la lógica de router y navegación a diferentes vistas de productos
- * Navega por categorias y productos*/
+// Construyen rutas y navega a otras vistas, no se hace  fetch ni manipulación de datos (Por eso no usa VueQuery)
 
 import type { ProductInterface } from '../interfaces'
 import { useRouter } from 'vue-router'
@@ -11,7 +9,7 @@ export function useProductNavigation() {
 
   const navigateToProduct = (product: ProductInterface) => {
     router.push({
-      name: 'ProductDetail',
+      name: 'productDetail',
       params: {
         category: product.category.slug,
         id: product.id.toString(),
@@ -21,7 +19,7 @@ export function useProductNavigation() {
 
   const navigateToCategory = (categorySlug: string) => {
     router.push({
-      name: 'ProductsByCategory',
+      name: 'productsByCategory',
       params: { category: categorySlug },
     })
   }

@@ -1,3 +1,5 @@
+//Obj productsApi que centraliza todas las op CRUD para productos usando Axios a través de axiosAdapter (personalizado).
+
 import { axiosAdapter } from "@/shared/api/axiosAdapter";
 import type { ProductInterface } from "../interfaces";
 import type { AxiosResponse } from "axios";
