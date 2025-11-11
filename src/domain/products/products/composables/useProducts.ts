@@ -8,7 +8,7 @@ import { PRODUCTS_CONFIG } from "../../config/products.config"
 import { unref } from 'vue'
 import type { Ref } from 'vue'
 
-export function useProducts(categoryId: Ref<number> | number) {
+export const useProducts = (categoryId: Ref<number> | number) => {
 
   return useQuery<ProductInterface[]>({
     queryKey: ['products', categoryId],

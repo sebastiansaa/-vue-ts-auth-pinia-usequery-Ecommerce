@@ -1,4 +1,4 @@
-// Encargado de obtener los productos por ID
+// Obtiene un producto específico por ID
 // unref: Para que el composable acepte tanto un número directo como un Ref<number>. Mayor flexibilidad.
 
 import { useQuery } from "@tanstack/vue-query"

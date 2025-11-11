@@ -1,4 +1,4 @@
-// Construyen rutas y navega a otras vistas, no se hace  fetch ni manipulación de datos (Por eso no usa VueQuery)
+//Navega entre productos y categorías
 
 import type { ProductInterface } from '../interfaces'
 import { useRouter } from 'vue-router'
@@ -11,7 +11,7 @@ export function useProductNavigation() {
     router.push({
       name: 'productDetail',
       params: {
-        category: product.category.slug,
+        categoryId: product.category.id.toString(),
         id: product.id.toString(),
       },
     })

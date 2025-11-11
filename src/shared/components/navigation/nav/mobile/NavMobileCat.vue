@@ -1,5 +1,5 @@
 <template>
-  <Drawer :modelValue="isOpen" @update:modelValue="updateIsOpen">
+  <Drawer :modelValue="isOpen" :offsetTop="56" @update:modelValue="updateIsOpen">
     <div class="nav__mobile-menu nav__mobile-menu--under-nav">
       <div class="nav__mobile-group nav__mobile-group--categories">
         <BaseAccountButton
@@ -57,15 +57,9 @@ function updateIsOpen(value: boolean) {
 
 <style scoped>
 .nav__mobile-menu--under-nav {
-  margin-top: calc(56px + 64px);
   background: var(--color-background);
-  width: 100vw;
-  min-height: calc(100vh - 56px - 64px);
-  height: 100%;
-  left: 0;
-  top: 0;
-  position: fixed;
-  z-index: 100;
+  width: 100%;
+  min-height: 100%;
   padding-top: 1rem;
 }
 .nav__mobile-group {

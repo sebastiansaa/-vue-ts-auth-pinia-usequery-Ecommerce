@@ -1,11 +1,11 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { SHARED_CONFIG } from '../config/shared.config'
+//Composable para manejar breakpoints responsive: mobile y desktop/PC
 
-/**
- * Composable para manejar breakpoints responsive: mobile, tablet vertical y desktop/PC
- */
 export function useBreakPoints() {
-  const windowWidth = ref(0)
+  // null indica que aún no se midió el ancho
+
+  const windowWidth = ref<number | null>(null)
 
   function updateDimensions() {
     windowWidth.value = window.innerWidth
@@ -20,15 +20,24 @@ export function useBreakPoints() {
     window.removeEventListener('resize', updateDimensions)
   })
 
-  // Breakpoints: mobile, tablet vertical, desktop/PC
-  const isMobile = computed(() => windowWidth.value <= SHARED_CONFIG.breakpoints.mobile)
-  const isTablet = computed(() => windowWidth.value > SHARED_CONFIG.breakpoints.mobile && windowWidth.value <= SHARED_CONFIG.breakpoints.tabletMax)
-  const isDesktop = computed(() => windowWidth.value >= SHARED_CONFIG.breakpoints.desktop)
+  //  se midió el ancho en el cliente
+  const isReady = computed(() => windowWidth.value !== null)
+
+  const isMobile = computed(() => {
+    //`isMobile` / `isDesktop` son null-safe para evitar hydration mismatches en SSR
+    if (windowWidth.value === null) return false
+    return windowWidth.value <= SHARED_CONFIG.breakpoints.mobile
+  })
+
+  const isDesktop = computed(() => {
+    if (windowWidth.value === null) return false
+    return windowWidth.value >= SHARED_CONFIG.breakpoints.desktop
+  })
 
   return {
-    windowWidth,
+    windowWidth, //- `windowWidth` arranca como `null` (no medido)
+    isReady, //`isReady` indica que la medición ya ocurrió (cliente montado)
     isMobile,
-    isTablet,
     isDesktop,
   }
 }

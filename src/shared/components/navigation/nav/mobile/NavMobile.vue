@@ -15,17 +15,16 @@
             aria-label="Carrito"
             @click="handleSectionMobile('cart')"
           >
-            <ShoppingBagIcon class="nav-icon" />
+            <ShoppingCartIcon class="nav-icon" />
           </button>
         </div>
       </div>
     </nav>
 
-    <!-- SearchBar debajo del nav en móvil
+    <!-- SearchBar debajo del nav en móvil -->
     <div class="nav__searchbar-mobile">
       <SearchBar />
     </div>
-    -->
 
     <NavMobileCat :isOpen="isOpen" @update:isOpen="isOpen = $event" />
   </div>
@@ -33,12 +32,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ShoppingBagIcon } from '@heroicons/vue/24/outline'
+import { ShoppingCartIcon } from '@heroicons/vue/24/outline'
 import { LogoButton } from '@/shared/components/ui/actions/buttons'
 import { useNavigation } from '@/shared/composables/useNavigation'
 
 //import { SearchBar } from '@/domain/search/components'
 import NavMobileCat from './NavMobileCat.vue'
+import SearchBar from '@/domain/search/components/SearchBar.vue'
 
 const isOpen = ref(false)
 const { handleCategory, handleSection } = useNavigation()
@@ -89,6 +89,12 @@ function handleSectionMobile(section: string) {
 .nav-wrapper {
   position: relative;
 }
+.nav__searchbar-mobile {
+  position: relative;
+  margin-top: 56px; /* space for fixed nav */
+  padding: 0.5rem 1rem;
+  z-index: 1;
+}
 .nav {
   min-height: 56px;
   height: 56px;
@@ -137,5 +143,7 @@ function handleSectionMobile(section: string) {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #222; /* neutral stroke color for outline */
+  fill: none;
 }
 </style>

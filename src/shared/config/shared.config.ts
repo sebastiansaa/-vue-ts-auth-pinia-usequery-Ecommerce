@@ -2,8 +2,7 @@
 export const SHARED_CONFIG = {
   // Breakpoints compartidos para responsive design
   breakpoints: {
-    mobile: 767,        // max-width para mobile
-    tabletMax: 1023,    // max-width para tablet vertical
+    mobile: 1023,        // max-width para mobile
     desktop: 1024,      // min-width para desktop/tablet horizontal
   },
 

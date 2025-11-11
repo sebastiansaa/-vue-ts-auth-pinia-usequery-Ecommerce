@@ -1,32 +1,43 @@
 <template>
   <transition name="drawer-slide">
-    <div v-if="modelValue" class="drawer" @click.self="close">
+    <div v-if="modelValue" class="drawer" :style="drawerStyle" @click.self="close">
       <div class="drawer__content">
         <slot />
-        <button class="drawer__close" @click="close" aria-label="Cerrar">✕</button>
       </div>
     </div>
   </transition>
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, computed } from 'vue'
+
 const props = defineProps({
   modelValue: Boolean,
+  offsetTop: { type: Number, default: 0 },
 })
 const emit = defineEmits(['update:modelValue'])
+
 function close() {
   emit('update:modelValue', false)
 }
+
+//Estilo computado para el drawer
+const drawerStyle = computed(() => {
+  const top = props.offsetTop || 0
+  return {
+    top: `${top}px`,
+    left: '0',
+    right: '0',
+    height: `calc(100vh - ${top}px)`,
+  }
+})
 </script>
 
 <style scoped>
 .drawer {
   position: fixed;
-  top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
   background: rgba(0, 0, 0, 0.15);
   z-index: 1000;
   display: flex;
@@ -42,15 +53,6 @@ function close() {
   padding: 2rem 1rem 1rem 1rem;
   position: relative;
   animation: drawerDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.drawer__close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  font-size: 2rem;
-  cursor: pointer;
 }
 .drawer-slide-enter-active,
 .drawer-slide-leave-active {
