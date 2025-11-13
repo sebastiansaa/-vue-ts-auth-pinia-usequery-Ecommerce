@@ -21,7 +21,6 @@
 import { ShoppingCartIcon } from '@heroicons/vue/24/outline'
 import { IconButton, LogoButton } from '@/shared/components/ui/actions/buttons'
 import SearchBar from '@/domain/search/components/SearchBar.vue'
-//import { SearchBar } from '@/domain/products/search/components'
 import NavDesktopCat from './NavDesktopCat.vue'
 import { useNavigation } from '@/shared/composables/useNavigation'
 
@@ -65,9 +64,9 @@ const { handleSection } = useNavigation()
   justify-content: flex-end;
 }
 
-/* Make desktop nav fixed to top so it doesn't scroll with the page */
+/* Make desktop nav sticky to top so it stays visible while scrolling */
 .nav {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;

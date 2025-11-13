@@ -3,9 +3,11 @@ import { ref } from "vue";
 import type { ProductInterface } from "../interfaces";
 
 export const useProductStore = defineStore('productStores', () => {
+
   const productsList = ref<ProductInterface[]>([]);
   const selectedProductDTO = ref<ProductInterface | null>(null);
   const selectedProductId = ref<number | null>(null);
+
   const setProductsList = (products: ProductInterface[]) => {
     productsList.value = products;
   };

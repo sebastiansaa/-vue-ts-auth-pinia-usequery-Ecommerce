@@ -8,13 +8,40 @@
       {{ product?.description || 'noDescription' }}
     </p>
   </div>
+  <div class="actions-section">
+    <div class="action-btn">
+      <BaseProductButton @click="handleAddToCart" :disabled="!product"
+        >Añadir al carrito</BaseProductButton
+      >
+    </div>
+    <div class="action-btn">
+      <BaseProductButton customClass="buy-now" @click="handleBuyNow" :disabled="!product"
+        >Comprar ahora</BaseProductButton
+      >
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { useProductStore } from '../../../stores'
+import { cartStore } from '@/domain/cart/stores/cartStore'
+import BaseProductButton from '@/shared/components/ui/actions/buttons/BaseProductButton.vue'
 
 const productStore = useProductStore()
 const product = productStore.selectedProductDTO
+const router = useRouter()
+const cart = cartStore()
+
+const handleAddToCart = () => {
+  if (!product) return
+  cart.addToCart(product)
+}
+function handleBuyNow() {
+  if (!product) return
+  cart.addToCart(product)
+  router.push({ path: '/checkout', query: { productId: String(product.id) } })
+}
 </script>
 
 <style scoped>

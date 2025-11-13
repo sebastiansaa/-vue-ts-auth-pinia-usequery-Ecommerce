@@ -36,7 +36,6 @@ import { ShoppingCartIcon } from '@heroicons/vue/24/outline'
 import { LogoButton } from '@/shared/components/ui/actions/buttons'
 import { useNavigation } from '@/shared/composables/useNavigation'
 
-//import { SearchBar } from '@/domain/search/components'
 import NavMobileCat from './NavMobileCat.vue'
 import SearchBar from '@/domain/search/components/SearchBar.vue'
 
@@ -91,7 +90,6 @@ function handleSectionMobile(section: string) {
 }
 .nav__searchbar-mobile {
   position: relative;
-  margin-top: 56px; /* space for fixed nav */
   padding: 0.5rem 1rem;
   z-index: 1;
 }
@@ -106,7 +104,7 @@ function handleSectionMobile(section: string) {
   background: #f8f8f8;
   border-bottom: 1px solid #eee;
   border-radius: 0;
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;

@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import ProductMainMobile from './ProductMainMobile.vue'
 import ProductMainDesktop from './ProductMainDesktop.vue'
+
 import { useBreakPoints } from '../../../../../../shared/composables'
 import { Skeleton } from '@/shared/components/layout'
 

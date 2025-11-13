@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
 import NavComponent from './shared/components/navigation/nav/NavComponent.vue'
 import { getProducts } from './domain/products/products/services/getProducts'
@@ -37,14 +37,8 @@ body {
 
 #app-content {
   background: transparent;
-  padding-top: 62px;
 }
 
-@media (max-width: 1023px) {
-  #app-content {
-    padding-top: 56px;
-  }
-}
 main {
   min-height: 100%;
   display: flex;

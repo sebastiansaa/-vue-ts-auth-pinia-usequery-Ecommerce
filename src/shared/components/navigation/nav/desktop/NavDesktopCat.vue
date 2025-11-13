@@ -42,14 +42,12 @@ function selectCategory(categoryId: number) {
     border-radius: 18px;
     width: 100%;
     max-width: 1280px;
-    left: 50%;
-    transform: translateX(-50%);
-    position: fixed;
-    top: calc(62px + 0.5rem);
+    margin: 0 auto;
+    position: sticky;
+    top: 62px;
     z-index: 1999;
     padding: 0.5rem 1rem;
     box-sizing: border-box;
-    margin: 0;
   }
 }
 .base-btn-nav-desktop-cat {
