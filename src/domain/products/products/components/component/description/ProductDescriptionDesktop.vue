@@ -27,23 +27,28 @@
 <script setup lang="ts">
 import { useProductStore } from '../../../stores'
 import { cartStore } from '@/domain/cart/stores/cartStore'
+import { useMiniCart } from '@/domain/cart/composables'
+import { usePaymentNavigation } from '@/domain/payment/composables/usePaymentNavigation'
 import BaseProductButton from '@/shared/components/ui/actions/buttons/BaseProductButton.vue'
 import { useRouter } from 'vue-router'
 
 const productStore = useProductStore()
 const product = productStore.selectedProductDTO
-const router = useRouter()
 const cart = cartStore()
+const { openMini } = useMiniCart()
+const { setProductId, goToCheckout } = usePaymentNavigation()
 
 const handleAddToCart = () => {
   if (!product) return
   cart.addToCart(product)
+  openMini()
 }
 
 const handleBuyNow = () => {
   if (!product) return
   cart.addToCart(product)
-  router.push({ path: '/checkout', query: { productId: String(product.id) } })
+  setProductId(product.id)
+  goToCheckout()
 }
 </script>
 
@@ -89,6 +94,18 @@ const handleBuyNow = () => {
   line-height: 1.7;
   font-size: 1rem;
   margin: 0;
+}
+
+.actions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 0 2rem;
+}
+
+.action-btn {
+  width: 100%;
 }
 
 @media (min-width: 1400px) {

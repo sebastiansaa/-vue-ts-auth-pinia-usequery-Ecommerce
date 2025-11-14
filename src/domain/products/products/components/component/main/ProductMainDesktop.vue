@@ -4,7 +4,7 @@
       <ProductGallery />
     </div>
     <div class="details-section">
-      <ProductDescription />
+      <ProductDescriptionDesktop />
     </div>
     <div class="related-section">
       <ProductRelated />
@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import ProductGallery from '../gallery/ProductGallery.vue'
-import ProductDescription from '../description/ProductDescription.vue'
+import ProductDescriptionDesktop from '../description/ProductDescriptionDesktop.vue'
 import ProductRelated from '../related/ProductRelated.vue'
 </script>
 

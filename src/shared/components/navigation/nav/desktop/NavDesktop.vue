@@ -9,8 +9,16 @@
     </div>
 
     <div class="nav__section nav__section--right">
-      <IconButton class="icon-btn-nav-desktop" aria-label="Carrito" @click="handleSection('cart')">
+      <IconButton
+        class="icon-btn-nav-desktop"
+        aria-label="Carrito"
+        @click="handleCartClick"
+        role="button"
+      >
         <ShoppingCartIcon class="nav-icon" />
+        <span v-if="count > 0" class="cart-badge" :aria-label="`${count} artículos en carrito`">{{
+          count
+        }}</span>
       </IconButton>
     </div>
   </nav>
@@ -22,17 +30,31 @@ import { ShoppingCartIcon } from '@heroicons/vue/24/outline'
 import { IconButton, LogoButton } from '@/shared/components/ui/actions/buttons'
 import SearchBar from '@/domain/search/components/SearchBar.vue'
 import NavDesktopCat from './NavDesktopCat.vue'
-import { useNavigation } from '@/shared/composables/useNavigation'
+import { cartStore } from '@/domain/cart/stores/cartStore'
+import { useMiniCart } from '@/domain/cart/composables'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 
-const { handleSection } = useNavigation()
+const cart = cartStore()
+const count = computed(() => cart.count)
+const { openExpanded } = useMiniCart()
+const router = useRouter()
+
+const handleCartClick = () => {
+  if (count.value > 0) {
+    openExpanded()
+  } else {
+    router.push('/cart')
+  }
+}
 </script>
 
 <style scoped>
 .nav-icon {
   width: 24px;
   height: 24px;
-  color: #222; /* neutral stroke color for outline */
-  fill: none; /* ensure no fill, only stroke */
+  color: #222;
+  fill: none;
 }
 
 .icon-btn-nav-desktop {
@@ -64,7 +86,7 @@ const { handleSection } = useNavigation()
   justify-content: flex-end;
 }
 
-/* Make desktop nav sticky to top so it stays visible while scrolling */
+/* nav ahora es sticky */
 .nav {
   position: sticky;
   top: 0;
@@ -75,9 +97,26 @@ const { handleSection } = useNavigation()
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 62px; /* matches NavDesktopCat top offset */
+  min-height: 62px;
   padding: 0.5rem 1rem;
   background: #f8f8f8;
   border-bottom: 1px solid #eee;
+}
+
+.icon-btn-nav-desktop {
+  position: relative;
+}
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: 12px;
+  min-width: 20px;
+  text-align: center;
+  line-height: 20px;
 }
 </style>

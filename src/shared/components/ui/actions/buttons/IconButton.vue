@@ -1,5 +1,10 @@
 <template>
-  <button :type="type" :class="['icon-btn', customClass]" @click="onClick" :aria-label="ariaLabel">
+  <button
+    :type="type || 'button'"
+    :class="['icon-btn', customClass]"
+    @click="onClick"
+    :aria-label="ariaLabel"
+  >
     <slot />
   </button>
 </template>

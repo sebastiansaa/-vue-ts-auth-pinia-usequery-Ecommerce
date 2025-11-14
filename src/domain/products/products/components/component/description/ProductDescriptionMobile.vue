@@ -23,24 +23,28 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import { useProductStore } from '../../../stores'
 import { cartStore } from '@/domain/cart/stores/cartStore'
+import { useMiniCart } from '@/domain/cart/composables'
+import { usePaymentNavigation } from '@/domain/payment/composables/usePaymentNavigation'
 import BaseProductButton from '@/shared/components/ui/actions/buttons/BaseProductButton.vue'
 
 const productStore = useProductStore()
 const product = productStore.selectedProductDTO
-const router = useRouter()
 const cart = cartStore()
+const { openMini } = useMiniCart()
+const { setProductId, goToCheckout } = usePaymentNavigation()
 
 const handleAddToCart = () => {
   if (!product) return
   cart.addToCart(product)
+  openMini()
 }
 function handleBuyNow() {
   if (!product) return
   cart.addToCart(product)
-  router.push({ path: '/checkout', query: { productId: String(product.id) } })
+  setProductId(product.id)
+  goToCheckout()
 }
 </script>
 
@@ -50,6 +54,9 @@ function handleBuyNow() {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .product-title {
@@ -74,6 +81,21 @@ function handleBuyNow() {
   color: #555;
   line-height: 1.6;
   font-size: 0.95rem;
+}
+
+.actions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.action-btn {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (min-width: 600px) and (max-width: 1023px) {

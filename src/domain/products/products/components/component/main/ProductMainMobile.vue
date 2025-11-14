@@ -4,7 +4,7 @@
       <ProductGallery />
     </div>
     <div class="details-section">
-      <ProductDescription />
+      <ProductDescriptionMobile />
     </div>
     <div class="related-section">
       <ProductRelated />
@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import ProductGallery from '../gallery/ProductGallery.vue'
-import ProductDescription from '../description/ProductDescription.vue'
+import ProductDescriptionMobile from '../description/ProductDescriptionMobile.vue'
 import ProductRelated from '../related/ProductRelated.vue'
 </script>
 
@@ -24,7 +24,9 @@ import ProductRelated from '../related/ProductRelated.vue'
   flex-direction: column;
   gap: 1rem;
   width: 100%;
+  max-width: 100%;
   padding: 0.5rem 0;
+  box-sizing: border-box;
 }
 
 .gallery-section {

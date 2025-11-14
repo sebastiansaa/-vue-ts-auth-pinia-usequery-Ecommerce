@@ -1,0 +1,59 @@
+<template>
+  <li class="cart-item-row">
+    <img v-if="item.product.images" :src="item.product.images[0]" alt="" class="thumb" />
+    <div class="meta">
+      <div class="title">{{ item.product.title }}</div>
+      <div class="qty">x{{ item.quantity }}</div>
+    </div>
+    <div class="price">{{ formatPrice(item.product.price) }}</div>
+    <button class="remove" @click="$emit('remove', item.product.id)" aria-label="Eliminar">
+      ×
+    </button>
+  </li>
+</template>
+
+<script setup lang="ts">
+import { defineProps } from 'vue'
+
+const props = defineProps<{ item: any }>()
+
+function formatPrice(p: any) {
+  const n = Number(p || 0)
+  return `${n} USD`
+}
+</script>
+
+<style scoped>
+.cart-item-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.meta {
+  flex: 1;
+}
+.title {
+  font-size: 0.95rem;
+}
+.qty {
+  font-size: 0.85rem;
+  color: #666;
+}
+.price {
+  white-space: nowrap;
+  margin-left: 0.5rem;
+}
+.remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  margin-left: 0.5rem;
+}
+</style>

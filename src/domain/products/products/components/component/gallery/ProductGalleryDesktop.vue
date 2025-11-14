@@ -27,7 +27,7 @@ import { useProductStore } from '../../../stores'
 const productStore = useProductStore()
 const selected = ref(0)
 
-// images es un [] reactivo
+// images => [] reactivo
 const images = computed(() => productStore.selectedProductDTO?.images || [])
 </script>
 

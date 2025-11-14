@@ -1,5 +1,5 @@
 <template>
-  <button :type="type" :class="['base-product-btn', customClass]" @click="$emit('click', $event)">
+  <button :type="type || 'button'" :class="['base-product-btn', customClass]" @click="handleClick">
     <slot />
   </button>
 </template>
@@ -11,6 +11,14 @@ const props = defineProps<{
   type?: 'button' | 'submit' | 'reset'
   customClass?: string
 }>()
+
+const emit = defineEmits<{
+  click: [event: MouseEvent]
+}>()
+
+function handleClick(event: MouseEvent) {
+  emit('click', event)
+}
 </script>
 
 <style scoped>

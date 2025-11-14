@@ -3,8 +3,8 @@
     <nav class="nav">
       <div class="nav__section nav__section--left">
         <LogoButton />
-        <button class="nav__burger" @click="isOpen = !isOpen" aria-label="Abrir menú">
-          <span v-if="!isOpen">&#9776;</span>
+        <button class="nav__burger" @click="menuOpen = !menuOpen" aria-label="Abrir menú">
+          <span v-if="!menuOpen">&#9776;</span>
           <span v-else>✕</span>
         </button>
       </div>
@@ -13,9 +13,16 @@
           <button
             class="icon-btn-nav-movil"
             aria-label="Carrito"
-            @click="handleSectionMobile('cart')"
+            @click="handleCartClick"
+            role="button"
           >
             <ShoppingCartIcon class="nav-icon" />
+            <span
+              v-if="count > 0"
+              class="cart-badge"
+              :aria-label="`${count} artículos en carrito`"
+              >{{ count }}</span
+            >
           </button>
         </div>
       </div>
@@ -26,30 +33,40 @@
       <SearchBar />
     </div>
 
-    <NavMobileCat :isOpen="isOpen" @update:isOpen="isOpen = $event" />
+    <NavMobileCat :isOpen="menuOpen" @update:isOpen="menuOpen = $event" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ShoppingCartIcon } from '@heroicons/vue/24/outline'
 import { LogoButton } from '@/shared/components/ui/actions/buttons'
 import { useNavigation } from '@/shared/composables/useNavigation'
+import { cartStore } from '@/domain/cart/stores/cartStore'
+import { useMiniCart } from '@/domain/cart/composables'
 
 import NavMobileCat from './NavMobileCat.vue'
 import SearchBar from '@/domain/search/components/SearchBar.vue'
 
-const isOpen = ref(false)
+// menú móvil local
+const menuOpen = ref(false)
 const { handleCategory, handleSection } = useNavigation()
 
-function handleCategoryMobile(categoryId: number) {
-  handleCategory(categoryId)
-  isOpen.value = false
-}
+const cart = cartStore()
+const count = computed(() => cart.count)
+const { openExpanded } = useMiniCart()
 
 function handleSectionMobile(section: string) {
   handleSection(section)
-  isOpen.value = false
+  menuOpen.value = false
+}
+
+function handleCartClick() {
+  if (count.value > 0) {
+    openExpanded()
+  } else {
+    handleSectionMobile('cart')
+  }
 }
 </script>
 
@@ -67,6 +84,10 @@ function handleSectionMobile(section: string) {
 }
 .icon-btn-nav-movil:hover {
   background: #ececec;
+}
+
+.icon-btn-nav-movil {
+  position: relative;
 }
 
 .nav__section--right {
@@ -143,5 +164,19 @@ function handleSectionMobile(section: string) {
   justify-content: center;
   color: #222; /* neutral stroke color for outline */
   fill: none;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: 12px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 18px;
 }
 </style>

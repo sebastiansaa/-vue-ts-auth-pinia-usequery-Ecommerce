@@ -6,6 +6,8 @@
     <div class="nav-content">
       <slot />
     </div>
+    <!-- Mini cart drawer global -->
+    <MiniCartDrawer />
   </div>
 </template>
 
@@ -14,6 +16,7 @@ import NavDesktop from './desktop/NavDesktop.vue'
 import NavMobile from './mobile/NavMobile.vue'
 import { useBreakPoints } from '@/shared/composables'
 import { Skeleton } from '@/shared/components/layout'
+import MiniCartDrawer from '@/domain/cart/components/miniCartDrawer.vue'
 
 const { isMobile, isReady } = useBreakPoints()
 </script>

@@ -27,9 +27,19 @@ const router = createRouter({
       props: true
     },
     {
-      path: '/cart',
-      name: 'cart',
-      component: () => import('../domain/cart/views/CartView.vue'),
+      path: '/payment',
+      name: 'payment',
+      component: () => import('../domain/payment/views/PaymentView.vue'),
+    },
+    {
+      path: '/checkout',
+      name: 'checkout',
+      component: () => import('../domain/checkout/views/CheckoutView.vue'),
+    },
+    {
+      path: '/orders',
+      name: 'orders',
+      component: () => import('../domain/orders/views/OrdersListView.vue'),
     },
 
   ],

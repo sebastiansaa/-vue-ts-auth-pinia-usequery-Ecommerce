@@ -1,5 +1,9 @@
 <template>
-  <button :type="type" :class="['base-payment-btn', customClass]" @click="$emit('click', $event)">
+  <button
+    :type="type || 'button'"
+    :class="['base-payment-btn', customClass]"
+    @click="$emit('click', $event)"
+  >
     <slot />
   </button>
 </template>
