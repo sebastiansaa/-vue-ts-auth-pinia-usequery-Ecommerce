@@ -62,13 +62,11 @@ import BasePaymentButton from '@/shared/components/ui/actions/buttons/BasePaymen
 import { cartStore } from '@/domain/cart/stores/cartStore'
 import { useMiniCartStore } from '../stores/useMiniCartStore'
 import { usePaymentNavigation } from '@/domain/cart-summary/composables/usePaymentNavigation'
-import { useRouter } from 'vue-router'
 import { formatPrice } from '@/shared/helpers/formatPrice'
 
 const cart = cartStore()
 const miniCart = useMiniCartStore()
 const { goToCheckout } = usePaymentNavigation()
-const router = useRouter()
 
 const items = computed(() => cart.cartItems)
 const total = computed(() => cart.totalPrice)
@@ -82,11 +80,6 @@ function handlePanelClick() {
   if (miniCart.isMini) {
     miniCart.expand()
   }
-}
-
-function goToCart() {
-  miniCart.close()
-  router.push('/cart')
 }
 
 function openCheckout() {
