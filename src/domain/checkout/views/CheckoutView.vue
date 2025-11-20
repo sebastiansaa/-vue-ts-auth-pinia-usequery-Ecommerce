@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { cartStore } from '@/domain/cart/stores/cartStore'
 import CheckoutSummary from '../components/CheckoutSummary.vue'
@@ -29,9 +29,9 @@ const total = computed(() => cart.totalPrice)
 
 const { processing, success, performCheckout, error } = useCheckout()
 
-// Resetear el estado del checkout al entrar a la vista
-// Esto evita que mensajes de éxito persistan al volver desde otras páginas
-onMounted(() => {
+// Resetear el estado del checkout al salir de la vista
+// Esto limpia customer, payment, errorMessage, etc. para el próximo checkout
+onBeforeUnmount(() => {
   checkoutStore.resetCheckout()
 })
 

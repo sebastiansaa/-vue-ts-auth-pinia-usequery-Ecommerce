@@ -36,13 +36,13 @@
     <div v-else>
       <div class="field">
         <label>Número de tarjeta</label>
-        <input v-model="number" placeholder="4242 4242 4242 4242" inputmode="numeric" />
+        <input v-model="numberFormatted" placeholder="4242 4242 4242 4242" inputmode="numeric" />
       </div>
 
       <div class="row">
         <div class="field small">
           <label>Expiración (MM/AA)</label>
-          <input v-model="exp" placeholder="04/28" />
+          <input v-model="expFormatted" placeholder="04/28" />
         </div>
         <div class="field small">
           <label>CVC</label>
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import usePaymentCard, { type TokenizePayload } from '../composables/usePaymentCard'
 
 const props = defineProps<{ publishableKey?: string }>()
@@ -84,6 +84,31 @@ const {
   tokenizePayload,
   confirmPayment,
 } = usePaymentCard(props.publishableKey, containerRef)
+
+// Formateo del número de tarjeta: insertar espacio cada 4 dígitos
+const numberFormatted = computed({
+  get: () => {
+    const digits = (number.value || '').replace(/\D+/g, '').slice(0, 16)
+    return digits.replace(/(.{4})/g, '$1 ').trim()
+  },
+  set: (val: string) => {
+    const digits = (val || '').replace(/\D+/g, '').slice(0, 16)
+    number.value = digits.replace(/(.{4})/g, '$1 ').trim()
+  },
+})
+
+// Formateo de expiración: MM/YY con slash automático
+const expFormatted = computed({
+  get: () => {
+    const digits = (exp.value || '').replace(/\D+/g, '').slice(0, 4)
+    if (digits.length <= 2) return digits
+    return digits.slice(0, 2) + '/' + digits.slice(2)
+  },
+  set: (val: string) => {
+    const digits = (val || '').replace(/\D+/g, '').slice(0, 4)
+    exp.value = digits.length <= 2 ? digits : digits.slice(0, 2) + '/' + digits.slice(2)
+  },
+})
 
 async function handleTokenizeClick() {
   const res = await tokenizePayload()

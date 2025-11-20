@@ -2,13 +2,6 @@
 
 export type PaymentMethodId = 'card'
 
-export interface CardPaymentDetails {
-    token: string
-    last4?: string | null
-    brand?: string | null
-    cardholder?: string | null
-}
-
 export interface PaymentMethod {
     method: PaymentMethodId
     details?: any

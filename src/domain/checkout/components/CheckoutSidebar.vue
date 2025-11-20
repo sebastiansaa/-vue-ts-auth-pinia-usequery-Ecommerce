@@ -5,16 +5,10 @@
     <PaymentMethods @select="onPaymentSelect" />
 
     <!-- Mostrar formulario de tarjeta si el método seleccionado es tarjeta -->
-    <PaymentCardForm
-      v-if="payment?.method === 'card'"
-      ref="cardFormRef"
-      @tokenized="onCardTokenized"
-    />
+    <PaymentCardForm ref="cardFormRef" />
 
     <div class="actions">
-      <button class="btn primary" :disabled="!canPay || isProcessing" @click="onPayClick">
-        Pagar ahora
-      </button>
+      <button class="btn primary" @click="onPayClick">Pagar ahora</button>
     </div>
 
     <div class="processing" v-if="isProcessing">Procesando pago...</div>
@@ -37,11 +31,9 @@ const {
   errorMessage,
   isProcessing,
   success,
-  canPay,
   cardFormRef,
   onCustomerConfirm,
   onPaymentSelect,
-  onCardTokenized,
   handlePay,
 } = useCheckoutSidebar()
 

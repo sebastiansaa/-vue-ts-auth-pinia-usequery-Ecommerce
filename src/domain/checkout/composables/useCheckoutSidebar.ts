@@ -1,7 +1,7 @@
 import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCheckoutStore } from '@/domain/checkout/stores/checkoutStore'
-import type { CardFormRef } from '@/domain/checkout/composables/useCheckoutFlow'
+import type { CardFormRef } from '@/domain/checkout/helpers/performCardPayment'
 
 /**
  * Composable para orquestar el flujo del CheckoutSidebar.
@@ -17,8 +17,8 @@ import type { CardFormRef } from '@/domain/checkout/composables/useCheckoutFlow'
  */
 export function useCheckoutSidebar() {
   const checkout = useCheckoutStore()
-  const { customer, payment, errorMessage, isProcessing, success, canPay } = storeToRefs(checkout)
-  const { onCustomerConfirm, onPaymentSelect, onCardTokenized, setCardForm, handlePayment } = checkout
+  const { customer, payment, errorMessage, isProcessing, success } = storeToRefs(checkout)
+  const { onCustomerConfirm, onPaymentSelect, setCardForm, handlePayment } = checkout
 
   const cardFormRef = ref<CardFormRef>(null)
 
@@ -29,7 +29,6 @@ export function useCheckoutSidebar() {
     cardFormRef,
     (val) => {
       setCardForm(val)
-      console.log('[CheckoutSidebar] cardFormRef changed - setCardForm called:', !!val)
     },
     { immediate: true }
   )
@@ -46,8 +45,6 @@ export function useCheckoutSidebar() {
    * - Devuelve el payload del checkout si es exitoso
    */
   async function handlePay(total: number) {
-    console.log('[CheckoutSidebar] Iniciando pago con total:', total)
-
     // Si el formulario de tarjeta aún no está montado (cardFormRef -> store.cardForm === null),
     // esperar hasta que esté disponible o hasta que expire el timeout.
     const waitForCardForm = async (timeout = 1500, interval = 50) => {
@@ -66,17 +63,8 @@ export function useCheckoutSidebar() {
       return false
     }
 
-    const cardReady = await waitForCardForm()
-    if (!cardReady) {
-      console.warn('[CheckoutSidebar] cardForm no disponible tras timeout; continuará y podría fallar')
-    }
-
+    await waitForCardForm()
     const result = await handlePayment(total)
-    if (result) {
-      console.log('[CheckoutSidebar] Pago exitoso:', result)
-    } else {
-      console.error('[CheckoutSidebar] Pago falló')
-    }
     return result
   }
 
@@ -87,13 +75,11 @@ export function useCheckoutSidebar() {
     errorMessage,
     isProcessing,
     success,
-    canPay,
     cardFormRef,
 
     // Acciones
     onCustomerConfirm,
     onPaymentSelect,
-    onCardTokenized,
     handlePay,
   }
 }

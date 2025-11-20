@@ -1,6 +1,5 @@
-import type { Ref } from 'vue'
 import { createPaymentIntent } from '@/domain/checkout/services/paymentService'
-import type { Customer, PaymentMethod, PaymentIntent, Order, CardPaymentDetails } from '@/domain/checkout/interfaces/types'
+import type { Customer, PaymentMethod, PaymentIntent, Order } from '@/domain/checkout/interfaces/types'
 
 export type CardFormRef = {
   confirmPayment: (clientSecret: string) => Promise<{ paymentIntent?: PaymentIntent; error?: any }>
@@ -20,10 +19,21 @@ export interface PerformCardPaymentResult {
   order?: Order
 }
 
-/* Ejecuta el flujo de pago con tarjeta: valida datos, crea el `PaymentIntent` y lo confirma (Stripe o mock).
- * Devuelve `{ success, paymentIntent }`. La creación de la orden queda a cargo del caller.
- * Lanza errores si falta información o falla la confirmación.
-*/
+/**
+ * Ejecuta el flujo de pago con tarjeta: valida datos, crea el PaymentIntent y lo confirma (Stripe o mock).
+ * 
+ * Responsabilidades:
+ * - Valida parámetros esenciales (customer, payment, cardForm, total)
+ * - Crea PaymentIntent vía backend (mock o real)
+ * - Confirma el pago en el cliente (Stripe Elements o mock)
+ * 
+ * @param params - Parámetros del pago (customer, payment, cardForm, total)
+ * @returns Resultado con success y paymentIntent
+ * @throws Error si falta información o falla la confirmación
+ * 
+ * NOTA: No completa la orden - solo crea y confirma el PaymentIntent.
+ * La creación de la orden debe realizarse por el caller.
+ */
 export async function performCardPayment(params: PerformCardPaymentParams): Promise<PerformCardPaymentResult> {
   const { customer, payment, cardForm, total } = params
 
@@ -51,9 +61,6 @@ export async function performCardPayment(params: PerformCardPaymentParams): Prom
     return { success: false, paymentIntent: pi }
   }
 
-  // NOTA: no completamos la orden aquí — solo creamos y confirmamos el PaymentIntent.
-  // La finalización del checkout (persistir la orden) debe realizarse por el caller
-  // (p. ej. `useCheckout`/`CheckoutView`) para evitar duplicar la acción.
   return { success: true, paymentIntent: pi }
 }
 

@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
-import { storeToRefs } from 'pinia'
 import { ref, computed } from 'vue'
-import { performCardPayment, type CardFormRef } from '@/domain/checkout/composables/useCheckoutFlow'
+import { performCardPayment, type CardFormRef } from '@/domain/checkout/helpers/performCardPayment'
 import { useErrorHandler } from '@/shared/composables/useErrorHandler'
-import type { Customer, PaymentMethod, CardPaymentDetails, CompleteCheckoutPayload, PaymentIntent } from '@/domain/checkout/interfaces/types'
+import type { Customer, PaymentMethod, CompleteCheckoutPayload, PaymentIntent } from '@/domain/checkout/interfaces/types'
 
 export const useCheckoutStore = defineStore('checkout', () => {
   const customer = ref<Customer | null>(null)
@@ -15,31 +14,6 @@ export const useCheckoutStore = defineStore('checkout', () => {
 
   const { handleError, handleSuccess } = useErrorHandler()
 
-  /**
-   * Determina si el botón "Pagar ahora" debe estar habilitado.
-   *
-   * Requisitos:
-   * - customer debe estar completo (emitido por CheckoutForm)
-   * - payment.method debe estar seleccionado (emitido por PaymentMethods)
-   *
-   * NOTA: NO verifica si la tarjeta está tokenizada porque la tokenización
-   * es AUTOMÁTICA al hacer clic en "Pagar ahora".
-   */
-  const canPay = computed(() => {
-    // Verificar que haya customer
-    if (!customer.value) {
-      console.log('[canPay] No hay customer')
-      return false
-    }
-    // Verificar que haya método de pago seleccionado
-    if (!payment.value || !payment.value.method) {
-      console.log('[canPay] No hay método de pago')
-      return false
-    }
-    console.log('[canPay] OK - customer y payment method presentes')
-    return true
-  })
-
   function onCustomerConfirm(payload: Customer) {
     customer.value = payload
   }
@@ -48,20 +22,8 @@ export const useCheckoutStore = defineStore('checkout', () => {
     payment.value = payload
   }
 
-  function onCardTokenized(tokenData: CardPaymentDetails) {
-    payment.value = { method: 'card', details: tokenData }
-  }
-
   /**
    * Tokeniza la tarjeta automáticamente antes de procesar el pago.
-   *
-   * Esta función se llama internamente desde `handlePayment()` si el método de pago
-   * es 'card' y aún no hay detalles de tarjeta tokenizados.
-   *
-   * El usuario NO necesita hacer clic en "Tokenizar" - esto es transparente.
-   * Solo llena los campos de la tarjeta y hace clic en "Pagar ahora".
-   *
-   * @returns TokenizePayload con token y datos de tarjeta, o null si falla
    */
   async function autoTokenizeCard() {
     if (!cardForm.value?.tokenizePayload) {
@@ -76,101 +38,81 @@ export const useCheckoutStore = defineStore('checkout', () => {
     cardForm.value = refValue
   }
 
-  async function pay(total: number) {
-    errorMessage.value = null
-    isProcessing.value = true
-    success.value = false
-    try {
-      if (!customer.value) throw new Error('Cliente no proporcionado')
-      if (!payment.value || !payment.value.method) throw new Error('Método de pago no seleccionado')
-
-      if (payment.value.method === 'card') {
-        const res = await performCardPayment({
-          customer: customer.value as Customer,
-          payment: payment.value as PaymentMethod,
-          cardForm: cardForm.value,
-          total,
-        })
-
-        if (!res.success) {
-          errorMessage.value = `Pago en estado: ${String(res.paymentIntent?.status ?? 'unknown')}`
-          return res
-        }
-
-        handleSuccess('Pago confirmado. Completando orden...')
-        success.value = true
-        return res
-      }
-
-      success.value = true
-      return { success: true }
-    } catch (err: any) {
-      const info = handleError(err, 'CheckoutStore')
-      errorMessage.value = info.message
-      success.value = false
-      return { success: false, error: err }
-    } finally {
-      isProcessing.value = false
-    }
-  }
-
-  async function performPay(total: number) {
-    const res = await pay(total)
-    if (!res || !res.success) {
-      return { success: false, error: (res as any)?.error ?? null }
-    }
-
-    return {
-      success: true,
-      paymentIntent: (res as any).paymentIntent as PaymentIntent | undefined,
-      payload: {
-        customer: customer.value as Customer,
-        payment: payment.value as PaymentMethod,
-        paymentIntent: (res as any).paymentIntent as PaymentIntent | undefined,
-      } as CompleteCheckoutPayload,
-    }
-  }
-
   /**
    * Maneja el flujo completo de pago con TOKENIZACIÓN AUTOMÁTICA.
    *
-   * Para pagos con tarjeta:
-   * 1. Verifica si la tarjeta ya fue tokenizada (payment.value.details existe)
-   * 2. Si NO está tokenizada, llama a autoTokenizeCard() automáticamente
-   * 3. Una vez tokenizada, procede con performPay() que crea el PaymentIntent
+   * Responsabilidades:
+   * 1. Valida que existan customer y payment
+   * 2. Tokeniza la tarjeta automáticamente si falta (para método 'card')
+   * 3. Crea y confirma el PaymentIntent
+   * 4. Maneja estados: isProcessing, success, errorMessage
+   * 5. Devuelve CompleteCheckoutPayload con customer, payment y paymentIntent
    *
-   * El usuario solo ve:
-   * - Llenar campos de tarjeta
-   * - Clic en "Pagar ahora"
+   * El usuario solo necesita:
+   * - Llenar campos de usuario y tarjeta
+   * - Hacer clic en "Pagar ahora"
    * - El sistema tokeniza y procesa todo automáticamente
    *
    * @param total - Monto total a pagar
-   * @returns CompleteCheckoutPayload con customer, payment y paymentIntent
+   * @returns CompleteCheckoutPayload si exitoso, null si falla
    */
-  async function handlePayment(total: number) {
-    if (!customer.value) return null
-    if (!payment.value || !payment.value.method) return null
+  async function handlePayment(total: number): Promise<CompleteCheckoutPayload | null> {
+    // Validaciones iniciales
+    if (!customer.value || !payment.value?.method) {
+      return null
+    }
 
-    // TOKENIZACIÓN AUTOMÁTICA: Si el método es tarjeta y no está tokenizada
-    if (payment.value.method === 'card') {
-      // Si no hay detalles de tarjeta, tokenizar automáticamente (transparente para el usuario)
-      if (!payment.value.details) {
+    errorMessage.value = null
+    isProcessing.value = true
+    success.value = false
+
+    try {
+      // TOKENIZACIÓN AUTOMÁTICA: Si el método es tarjeta y no está tokenizada
+      if (payment.value.method === 'card' && !payment.value.details) {
         const tokenData = await autoTokenizeCard()
         if (tokenData) {
           payment.value = { method: 'card', details: tokenData }
         }
       }
 
-      const res = await performPay(total)
-      if (!res.success) return null
-      return res.payload
-    }
+      // Procesar pago con tarjeta
+      if (payment.value.method === 'card') {
+        const res = await performCardPayment({
+          customer: customer.value,
+          payment: payment.value,
+          cardForm: cardForm.value,
+          total,
+        })
 
-    // Otros métodos (no tarjeta): devolver payload básico
-    return {
-      customer: customer.value,
-      payment: payment.value,
-    } as CompleteCheckoutPayload
+        if (!res.success) {
+          errorMessage.value = `Pago en estado: ${String(res.paymentIntent?.status ?? 'unknown')}`
+          return null
+        }
+
+        handleSuccess('Pago confirmado. Completando orden...')
+        success.value = true
+
+        return {
+          customer: customer.value,
+          payment: payment.value,
+          paymentIntent: res.paymentIntent,
+        }
+      }
+
+      // Otros métodos de pago (futuro)
+      success.value = true
+      return {
+        customer: customer.value,
+        payment: payment.value,
+      }
+    } catch (err: any) {
+      const info = handleError(err, 'CheckoutStore')
+      errorMessage.value = info.message
+      success.value = false
+      return null
+    } finally {
+      isProcessing.value = false
+    }
   }
 
   /**
@@ -197,13 +139,9 @@ export const useCheckoutStore = defineStore('checkout', () => {
     errorMessage,
     isProcessing,
     success,
-    canPay,
     onCustomerConfirm,
     onPaymentSelect,
-    onCardTokenized,
     setCardForm,
-    pay,
-    performPay,
     handlePayment,
     resetCheckout,
   }

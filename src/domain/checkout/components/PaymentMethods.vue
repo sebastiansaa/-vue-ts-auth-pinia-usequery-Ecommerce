@@ -6,7 +6,7 @@
         <input type="radio" :value="m.id" v-model="selected" />
         <strong>{{ m.label }}</strong>
       </label>
-      <div class="method-body" v-if="selected === m.id">
+      <div class="method-body">
         <p v-if="m.id === 'card'">Usa tu tarjeta de crédito. (Formulario detallado pendiente.)</p>
       </div>
     </div>
