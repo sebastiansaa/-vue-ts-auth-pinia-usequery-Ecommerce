@@ -7,6 +7,7 @@
  */
 import type { Ref } from 'vue'
 import { onClickOutside as vueUseClickOutside, useEventListener } from '@vueuse/core'
+import { logger } from '../services/logger'
 
 export function useClickOutside(
   containerRef: Ref<HTMLElement | null>,
@@ -17,13 +18,17 @@ export function useClickOutside(
 
   // Usar onClickOutside de VueUse para detección de clicks fuera
   // VueUse maneja automáticamente pointerdown (mouse + touch)
-  const stopClickOutside = vueUseClickOutside(containerRef, onOutside)
+  const stopClickOutside = vueUseClickOutside(containerRef, () => {
+    logger.debug('[useClickOutside] Click outside detected')
+    onOutside()
+  })
 
   // Manejar Escape key si está habilitado
   let stopEscape: (() => void) | undefined
   if (listenToEscape) {
     stopEscape = useEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        logger.debug('[useClickOutside] Escape key detected')
         onOutside()
       }
     })

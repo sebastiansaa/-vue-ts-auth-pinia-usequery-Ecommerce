@@ -1,19 +1,24 @@
 /** Manejo de errores para la aplicación con toast */
 
 import { useToast } from 'vue-toastification'
+import { normalizeApiError, normalizeStripeError } from '@/shared/helpers/error'
+import { logger } from '@/shared/services/logger'
 
 export function useErrorHandler() {
   const toast = useToast()
 
   const handleError = (error: any, context?: string) => {
-    console.error(`Error in ${context || 'unknown'}:`, error)
+    logger.error(`Error in ${context || 'unknown'}:`, error)
 
-    let message = 'Ha ocurrido un error inesperado.'
+    // Normalizar primero (sin efectos)
+    const apiNorm = normalizeApiError(error)
+    const maybeStripe = (error && (error.error || error.code)) ? normalizeStripeError(error) : null
+
+    let message = maybeStripe?.message ?? apiNorm.message ?? 'Ha ocurrido un error inesperado.'
     let title = 'Error'
-    const status = error.response?.status
+    const status = apiNorm.status
 
-    if (error.response) {
-      // Error de respuesta HTTP
+    if (status) {
       switch (status) {
         case 404:
           title = 'No encontrado'
@@ -32,63 +37,59 @@ export function useErrorHandler() {
           message = 'Error interno del servidor. Inténtalo más tarde.'
           break
         default:
-          message = error.response.data?.message || `Error ${status}: ${error.response.statusText}`
+          // dejar el message resuelto por normalizeApiError
+          break
       }
-    } else if (error.message) {
+    } else if (message) {
       // Error de red o cliente
-      if (error.message.includes('Network Error')) {
+      if (message.includes('Network Error')) {
         title = 'Error de conexión'
         message = 'Revisa tu conexión a internet e inténtalo de nuevo.'
-      } else {
-        message = error.message
       }
     }
 
     // Solo mostrar toast para errores críticos
-    if (status && status >= 500 || title === 'Error de conexión') {
+    if ((status && status >= 500) || title === 'Error de conexión') {
       toast.error(message, {
         timeout: 5000,
-        closeOnClick: true
+        closeOnClick: true,
       })
     }
 
     // Logging siempre
-    console.error(`[${title}] ${message}`)
+    logger.error(`[${title}] ${message}`)
 
     return { title, message, status }
   }
 
   const handleSuccess = (message: string) => {
-
     toast.success(message, {
       timeout: 3000,
-      closeOnClick: true
+      closeOnClick: true,
     })
-    console.log(`✅ Success: ${message}`)
+    logger.info(`✅ Success: ${message}`)
   }
 
   const handleInfo = (message: string) => {
-
     toast.info(message, {
       timeout: 4000,
-      closeOnClick: true
+      closeOnClick: true,
     })
-    console.info(`ℹ️ Info: ${message}`)
+    logger.info(`ℹ️ Info: ${message}`)
   }
 
   const handleWarning = (message: string) => {
-
     toast.warning(message, {
       timeout: 4000,
-      closeOnClick: true
+      closeOnClick: true,
     })
-    console.warn(`⚠️ Warning: ${message}`)
+    logger.warn(`⚠️ Warning: ${message}`)
   }
 
   return {
     handleError,
     handleSuccess,
     handleInfo,
-    handleWarning
+    handleWarning,
   }
 }

@@ -1,9 +1,9 @@
 import type { ProductInterface } from "@/domain/products/products/interfaces";
 import type { CartItem } from "@/domain/cart/interface";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
-
-const STORAGE_KEY = 'myapp_cart_v1'// clave para guardar datos en el localStorage
+import { computed, ref, watch } from "vue";
+import { loadCartFromStorage, saveCartToStorage } from "@/domain/cart/helpers/cartPersistence";
+import { logger } from "@/shared/services/logger";
 
 export const cartStore = defineStore('cartStore', () => {
 
@@ -16,79 +16,55 @@ export const cartStore = defineStore('cartStore', () => {
   const totalPrice = computed(() => _totalPrice.value);
   const count = computed(() => _cartItems.value.reduce((s, it) => s + (it.quantity || 0), 0));
 
-
-
-  // Métodos internos (privados)
-  const _loadFromStorage = () => {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) return;
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        _cartItems.value = parsed;
-      }
-    } catch (error) {
-      console.error("Error loading cart from storage:", error);
-    }
-    _recomputeTotal();
-  }
-
-  const _saveToStorage = () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(_cartItems.value));
-    } catch (error) {
-      console.error("Error saving cart to storage:", error);
-    }
-  }
-
-  const _recomputeTotal = () => {
-    _totalPrice.value = _cartItems.value.reduce((total, item) => {
+  // Automatización: Recálculo y Persistencia
+  watch(_cartItems, (items) => {
+    // Recalcular total
+    _totalPrice.value = items.reduce((total, item) => {
       const price = Number(item.product?.price ?? 0);
       return total + price * (item.quantity ?? 0);
     }, 0);
-  }
+
+    // Persistir
+    saveCartToStorage(items);
+  }, { deep: true });
 
   // Actions públicas
   const addToCart = (product: ProductInterface) => {
+    logger.debug(`[cartStore] addToCart: ${product.id}`);
     const existingItem = _cartItems.value.find(item => item.product.id === product.id)
     if (existingItem) {
       existingItem.quantity += 1;
     } else {
       _cartItems.value.push({ product, quantity: 1 });
     }
-    _recomputeTotal();
-    _saveToStorage();
   }
 
   const removeFromCart = (id: number) => {
+    logger.debug(`[cartStore] removeFromCart: ${id}`);
     const index = _cartItems.value.findIndex(item => item.product.id === id);
     //Si lo encuentra el item "(index !== -1)", lo elimina
     if (index !== -1) {
       _cartItems.value.splice(index, 1);
-      _recomputeTotal();
-      _saveToStorage();
     }
   }
 
   const updateQuantity = (id: number, quantity: number) => {
+    logger.debug(`[cartStore] updateQuantity: ${id}, quantity: ${quantity}`);
     const item = _cartItems.value.find(item => item.product.id === id);
     if (!item) return; // Si no se encuentra el item, salir
     item.quantity = Math.max(0, Math.trunc(quantity)); // Evitar cantidades negativas y decimales
     if (item.quantity === 0) {
       removeFromCart(id);
     }
-    _recomputeTotal();
-    _saveToStorage();
   }
 
   const clearCart = () => {
+    logger.debug('[cartStore] clearCart');
     _cartItems.value = [];
-    _recomputeTotal();
-    _saveToStorage();
   }
 
-  //Inicializar el store cargando datos del local storage
-  _loadFromStorage();
+  // Inicializar el store cargando datos del storage
+  _cartItems.value = loadCartFromStorage();
 
   return {
     // Getters (readonly computed)

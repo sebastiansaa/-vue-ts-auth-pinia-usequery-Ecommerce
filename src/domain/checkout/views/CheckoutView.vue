@@ -12,13 +12,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { cartStore } from '@/domain/cart/stores/cartStore'
 import CheckoutSummary from '../components/CheckoutSummary.vue'
 import CheckoutSidebar from '../components/CheckoutSidebar.vue'
 import { useCheckout } from '../composables/useCheckout'
 import { useCheckoutStore } from '../stores/checkoutStore'
+import { prefetchStripe } from '../helpers/stripe'
+import { STRIPE_PUBLISHABLE_KEY } from '@/shared/config'
 
 const router = useRouter()
 const cart = cartStore()
@@ -33,6 +35,11 @@ const { processing, success, performCheckout, error } = useCheckout()
 // Esto limpia customer, payment, errorMessage, etc. para el próximo checkout
 onBeforeUnmount(() => {
   checkoutStore.resetCheckout()
+})
+
+onMounted(() => {
+  // Calentar Stripe para reducir latencia percibida cuando el usuario vaya a pagar
+  if (STRIPE_PUBLISHABLE_KEY) prefetchStripe(STRIPE_PUBLISHABLE_KEY).catch(() => {})
 })
 
 function handleRemove(id: number) {

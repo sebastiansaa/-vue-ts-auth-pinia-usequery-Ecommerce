@@ -22,13 +22,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useProductStore } from '../../../stores'
+import { useProductsStore } from '../../../stores/productsStore'
 
-const productStore = useProductStore()
+const store = useProductsStore()
 const selected = ref(0)
 
 // images => [] reactivo
-const images = computed(() => productStore.selectedProductDTO?.images || [])
+const images = computed(() => store.selectedProductDTO?.images || [])
 </script>
 
 <style scoped>

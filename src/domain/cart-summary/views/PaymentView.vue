@@ -27,7 +27,7 @@ const { items, productId, productIdString, canBeginPayment, goToCheckout } = use
 const total = computed(() => cart.totalPrice)
 
 function handleRemove(id: number) {
-  if (typeof cart.removeFromCart === 'function') cart.removeFromCart(id)
+  cart.removeFromCart(id)
 }
 </script>
 

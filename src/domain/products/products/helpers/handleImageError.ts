@@ -2,7 +2,7 @@
 
 export const handleImageError = (
   event: Event,
-  fallbackSrc: string = '/placeholder.jpg'
+  fallbackSrc: string = '/placeholder.svg'
 ): void => {
   const target = event.target as HTMLImageElement
   //prevenir bucle infinito de errores

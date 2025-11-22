@@ -2,6 +2,9 @@ import { cartStore } from '@/domain/cart/stores/cartStore'
 import type { CartItem } from '@/domain/cart/interface'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { toNumberSafe, buildCheckoutQuery, type CheckoutQuery } from '@/shared/helpers/navigation'
+import { logger } from '@/shared/services/logger'
+
 /**
  * Composable que gestiona la navegación hacia el flujo de pago.
  * Sincroniza el `productId` desde la ruta o desde un valor inicial,
@@ -14,22 +17,22 @@ export const usePaymentNavigation = (initialProductId?: number) => {
 
   const items = computed<CartItem[]>(() => store.cartItems)
 
-  const productId = ref<number | null>(
-    initialProductId ?? (route.query.productId ? Number(route.query.productId) : null)
-  )
+  // Estado interno (privado)
+  const _productId = ref<number | null>(initialProductId ?? toNumberSafe(route.query.productId))
 
   // Sincroniza `productId` si cambia el query param en la ruta (conversión segura a número)
   watch(
     () => route.query.productId,
     (v) => {
-      const n = v ? Number(v) : NaN
-      productId.value = !isNaN(n) ? n : null
+      _productId.value = toNumberSafe(v)
     }
   )
 
   const canBeginPayment = computed(() => items.value.length > 0)
 
-  const productIdString = computed(() => (productId.value !== null && productId.value !== undefined ? String(productId.value) : ''))
+  // API Pública (Readonly)
+  const productId = computed(() => _productId.value)
+  const productIdString = computed(() => (_productId.value !== null && _productId.value !== undefined ? String(_productId.value) : ''))
 
   /**
    * Actualiza manualmente el ID del producto seleccionado.
@@ -37,7 +40,16 @@ export const usePaymentNavigation = (initialProductId?: number) => {
    * @param id - ID del producto a establecer, puede ser number, null o undefined
    */
   const setProductId = (id?: number | null) => {
-    productId.value = typeof id === 'number' ? id : null
+    logger.debug(`[usePaymentNavigation] setProductId: ${id}`)
+    _productId.value = typeof id === 'number' ? id : null
+  }
+
+  /**
+   * Resetea el ID del producto seleccionado a null.
+   */
+  const resetProductId = () => {
+    logger.debug('[usePaymentNavigation] resetProductId')
+    _productId.value = null
   }
 
   /**
@@ -48,31 +60,39 @@ export const usePaymentNavigation = (initialProductId?: number) => {
    * @param opts.returnTo - Ruta opcional a la que volver después del checkout
    */
   const goToCheckout = (opts?: { returnTo?: string }) => {
-    if (!canBeginPayment.value) return
-    const query: Record<string, string> = {}
+    if (!canBeginPayment.value) {
+      logger.warn('[usePaymentNavigation] goToCheckout blocked: cart is empty')
+      return
+    }
 
-    if (productId.value !== null) {
-      // Validación ligera: sólo incluir productId si existe en el carrito
-      const exists = store.cartItems.some((it) => it.product?.id === productId.value)
-      if (exists) {
-        query.productId = String(productId.value)
-      } else {
-        // Omitimos productId si no corresponde a un ítem del carrito
-        console.warn(`goToCheckout: productId ${productId.value} not found in cart; omitting from query.`)
+    // Validación de negocio: Verificar si el producto seleccionado sigue en el carrito
+    if (_productId.value !== null) {
+      const exists = store.cartItems.some((item) => item.product.id === _productId.value)
+      if (!exists) {
+        logger.warn(
+          `[usePaymentNavigation] productId ${_productId.value} not found in cart. Resetting.`,
+        )
+        _productId.value = null
       }
     }
 
-    if (opts?.returnTo) query.returnTo = opts.returnTo
+    logger.debug('[usePaymentNavigation] goToCheckout initiated')
+    const query: CheckoutQuery = buildCheckoutQuery({
+      productId: _productId.value,
+      cartItems: store.cartItems,
+      returnTo: opts?.returnTo,
+    })
     router.push({ path: '/checkout', query })
   }
 
   return {
-    items,           // Productos actuales en el carrito (reactivo)
-    productId,       // ID del producto seleccionado (reactivo y editable)
+    items, // Productos actuales en el carrito (reactivo)
+    productId, // ID del producto seleccionado (readonly computed)
     productIdString, // Versión string del ID, útil para props o queries
-    setProductId,    // Actualiza manualmente el ID del producto seleccionado
+    setProductId, // Actualiza manualmente el ID del producto seleccionado
+    resetProductId, // Resetea el ID del producto seleccionado
     canBeginPayment, // Booleano reactivo: true si el carrito tiene productos
-    goToCheckout     // Navega a /checkout con parámetros opcionales (productId, returnTo)
+    goToCheckout, // Navega a /checkout con parámetros opcionales (productId, returnTo)
   }
 }
 

@@ -12,9 +12,7 @@ import { useOrdersStore } from '../stores/ordersStore'
 
 const route = useRoute()
 const store = useOrdersStore()
-const { query, refetch, watchSuccess } = useOrders()
-
-const orders = computed<Order[]>(() => query.data?.value ?? [])
+const { orders, refetch, watchSuccess } = useOrders()
 
 onMounted(() => {
   void refetch()

@@ -73,69 +73,77 @@ Todo el proyecto está desarrollado con TypeScript, incluyendo componentes, stor
 
 Este proyecto incluye un **flujo completo de checkout con simulación (mock) de pagos**, preparado para migrar a Stripe cuando tengas un backend real.
 
-### Modo Mock (Actual)
+STORE:
 
-Por defecto, el proyecto funciona en **modo mock** sin necesidad de backend ni claves de Stripe. Esto está controlado por la variable de entorno:
+- Encapsulación: no exponer ref directamente; usar computed y funciones; mantener estado privado en defineStore.
+- Acciones controladas: todas las mutaciones pasan por acciones (setX, resetX), nunca desde el componente.
+- Tipado: definir interfaces claras (Customer, PaymentMethod), evitar any, usar Result<T> o unions discriminados.
+- Modularidad: separar stores por dominio (checkoutStore, userStore), evitar monolíticos, responsabilidades claras.
+- Naming: convenciones consistentes (onX, setX, resetX), evitar nombres ambiguos.
+- Reset y limpieza: incluir funciones (resetStore, resetErrors, resetPaymentState) para volver al estado inicial.
+- Testabilidad: acciones puras y predecibles, mock de dependencias externas, cubrir éxito, error y excepciones.
+- Errores y logging: centralizar manejo con composables (useErrorHandler), usar logger, mensajes claros y diferenciados.
+- Separación de dominio: helpers y constantes en carpetas propias, el store solo orquesta lógica de negocio.
+- Compatibilidad SSR/persistencia: evitar acceso directo a window/document, usar plugins de persistencia si se requiere.
+- Performance: usar computed para estado derivado, evitar watchers innecesarios.
+- Documentación: comentarios concisos en acciones críticas, explicar convenciones en README del dominio.
 
-```env
-VITE_FORCE_MOCK_PAYMENTS=true
-```
+composables:
 
-**Cómo funciona el mock:**
+- Encapsulación: no exponer ref crudos, usar computed y funciones; lógica interna privada, API pública mínima.
+- Tipado: definir interfaces claras, evitar any, usar genéricos y tipos discriminados.
+- Vue Query (si aplica): queryKey estable, configurar staleTime/cacheTime/retry, usar enabled condicional, centralizar mutationFn y manejar errores con onError.
+- VueUse (si aplica): aprovechar composables existentes, evitar duplicar lógica, usar utilidades de performance (watchDebounced, useThrottleFn).
+- Naming: prefijo useX, nombres semánticos y consistentes.
+- Modularidad: separar composables por dominio, evitar monolíticos, reutilizar composables pequeños.
+- Errores y logging: manejar errores con try/catch o onError, usar logger centralizado, feedback claro.
+- Testabilidad: funciones puras, mock de dependencias externas, cubrir estados (loading, success, error).
+- Compatibilidad SSR/persistencia: evitar acceso directo a window/document, usar useLocalStorage/useSessionStorage, validar en entornos SSR.
+- Performance: usar computed/memoization, evitar watchers innecesarios, optimizar queries con suspense y prefetchQuery si se usa Vue Query.
+- Documentación: comentarios concisos en funciones críticas, explicar convenciones en README de domain.
 
-1. El usuario completa el formulario de checkout (datos personales y tarjeta)
-2. El frontend simula la creación de un `PaymentIntent` con un `client_secret` mock
-3. El frontend simula la confirmación del pago (sin llamadas reales a Stripe)
-4. Se genera un ID de orden simulado (`order_mock_123456789`)
-5. El flujo completo funciona sin backend
+services:
 
-**Para probarlo:**
+- Responsabilidad única
+- Cada service debe encargarse de un dominio específico (ej. PaymentService, UserService).
+- Evitar que un mismo service maneje múltiples responsabilidades.
+- Tipado estricto
+- Definir DTOs e interfaces claras para entradas y salidas.
+- Evitar any, preferir tipos discriminados o genéricos controlados (Result<T>).
+- Encapsulación de lógica de negocio
+- Los services deben contener la lógica de negocio, no los stores ni los componentes.
+- Los stores/composables solo orquestan llamadas a los services.
+- Errores y trazabilidad
+- Manejar errores con excepciones claras (DomainError, ValidationError).
+- Usar logging centralizado para registrar fallos y métricas.
+- Testabilidad
+- Services deben ser fácilmente testeables con mocks de dependencias externas (API, DB).
+- Diseñar funciones puras cuando sea posible.
+- Consistencia en naming
+- Sufijo Service para clases o funciones de dominio (AuthService, CheckoutService).
+- Métodos con nombres semánticos (processPayment, validateUser).
+- Separación de infraestructura
+- No mezclar lógica de negocio con detalles técnicos (HTTP, DB).
+- Usar adaptadores/repositorios para acceso a datos.
+- agregar unh pequeña documentacion e el readme del domain
 
-```bash
-npm run dev
-```
+✅ Buenas prácticas para Helpers
 
-Navega al checkout, completa el formulario con cualquier dato (el mock no valida formato de tarjeta), y confirma la compra. Verás la confirmación exitosa con el ID de orden simulado.
-
-### Migración a Stripe Real (Futuro)
-
-Cuando tengas tu backend implementado, solo necesitas:
-
-1. **Cambiar el flag en `.env`:**
-
-   ```env
-   VITE_FORCE_MOCK_PAYMENTS=false
-   VITE_STRIPE_PK=pk_test_tu_clave_publica
-   ```
-
-2. **Implementar 2 endpoints en tu backend:**
-   - `POST /api/create-payment-intent`
-     - Body: `{ amount: number, currency: string }`
-     - Response: `{ client_secret: string }`
-   - `POST /api/complete-checkout`
-     - Body: `{ customer: {...}, payment: {...}, paymentIntent: {...} }`
-     - Response: `{ success: true, orderId: string }`
-
-3. **El código del frontend ya está preparado:**
-   - `paymentService.ts` detecta automáticamente si está en modo mock o real
-   - `usePaymentCard.ts` carga Stripe Elements cuando `FORCE_MOCK_PAYMENTS=false`
-   - Todo el flujo de confirmación con 3D Secure está implementado
-
-**Arquitectura del flujo real:**
-
-1. Frontend solicita `PaymentIntent` al backend → recibe `client_secret`
-2. Frontend confirma el pago con `stripe.confirmCardPayment(client_secret, ...)`
-3. Stripe maneja 3DS automáticamente (modal/iframe si es necesario)
-4. Frontend envía orden + `paymentIntent` al backend para persistir
-
-**Tarjetas de prueba Stripe para 3DS:**
-
-- `4000 0025 0000 3155` — Requiere autenticación 3DS
-- Ver más en [documentación de Stripe](https://stripe.com/docs/testing)
-
-## Notas adicionales
-
-- **Persistencia del carrito:** El carrito se guarda en `localStorage` y persiste entre sesiones
-- **VueUse integrado:** Uso de composables VueUse (watchDebounced, onClickOutside, useBreakpoints, etc.) para reducir código custom
-- **Mock de pagos:** Sistema completo de checkout sin backend, preparado para migración a Stripe real
-- **TypeScript estricto:** Todo tipado con interfaces y types explícitos
+- Funciones pequeñas y puras
+- Helpers deben ser funciones simples, sin efectos secundarios.
+- Evitar dependencias innecesarias.
+- Reutilización y modularidad
+- Colocar helpers en carpetas por dominio (helpers/payment, helpers/validation).
+- Evitar duplicar lógica en múltiples lugares.
+- Tipado estricto
+- Definir tipos de parámetros y retorno.
+- Evitar any, preferir tipos concretos o genéricos bien definidos.
+- Consistencia en naming
+- Prefijo claro según acción (formatX, parseX, validateX).
+- Evitar nombres ambiguos como doStuff.
+- Testabilidad
+- Helpers deben ser fácilmente testeables en aislamiento.
+- Cubrir casos límite y entradas inválidas.
+- Documentación mínima
+- Comentarios concisos explicando propósito y uso.
+- Ejemplos de entrada/salida en el README del domain

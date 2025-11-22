@@ -23,14 +23,14 @@
 </template>
 
 <script setup lang="ts">
-import { useProductStore } from '../../../stores'
+import { useProductsStore } from '../../../stores/productsStore'
 import { cartStore } from '@/domain/cart/stores/cartStore'
 import { useMiniCartStore } from '@/domain/cart/stores/useMiniCartStore'
 import { usePaymentNavigation } from '@/domain/cart-summary/composables/usePaymentNavigation'
 import BaseProductButton from '@/shared/components/ui/actions/buttons/BaseProductButton.vue'
 
-const productStore = useProductStore()
-const product = productStore.selectedProductDTO
+const store = useProductsStore()
+const product = store.selectedProductDTO
 const cart = cartStore()
 const { openMini } = useMiniCartStore()
 const { setProductId, goToCheckout } = usePaymentNavigation()

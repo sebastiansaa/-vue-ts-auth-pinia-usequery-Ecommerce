@@ -2,12 +2,13 @@
 // con debounce y min de char para realizar la búsqueda
 
 import { useSearchStore } from "../stores/searchStore"
-import { useQuery, useQueryClient } from "@tanstack/vue-query";
-import { computed, ref, unref, watchEffect, type Ref } from "vue";
+import { useQuery } from "@tanstack/vue-query";
+import { computed, ref, unref, type Ref } from "vue";
 import { watchDebounced } from '@vueuse/core'
 import { getProducts } from "../../products/products/services/getProducts";
 import type { ProductInterface } from "../../products/products/interfaces";
 import { SEARCH_CONFIG } from "../config/search.config";
+import { logger } from "../../../shared/services/logger";
 
 //"{ debounceMs }" => el retardo antes de lanzar búsqueda
 // minChars puede ser un number o un Ref<number> para permitir reactividad desde fuera
@@ -17,7 +18,6 @@ export const useSearch = ({
 } = {}) => {
 
   const searchStore = useSearchStore() // Estado global
-  const queryClient = useQueryClient()
 
   // debouncedTerm evita lanzar la query en cada pulsación
   const debouncedTerm = ref(unref(searchStore.searchTerm))
@@ -27,6 +27,7 @@ export const useSearch = ({
     () => searchStore.searchTerm,
     (val) => {
       debouncedTerm.value = unref(val)
+      logger.debug(`[useSearch] Debounced term updated: ${debouncedTerm.value}`)
     },
     { debounce: debounceMs }
   )
@@ -51,9 +52,11 @@ export const useSearch = ({
     if (!term || term.length < unref(minChars) || !allProducts.value) {
       return []
     }
-    return allProducts.value.filter((product: ProductInterface) =>
+    const filtered = allProducts.value.filter((product: ProductInterface) =>
       product.title.toLowerCase().includes(term)
     )
+    logger.debug(`[useSearch] Filtered ${filtered.length} results for term: ${term}`)
+    return filtered
   })
 
   // isLoading defensivo: usa optional chaining y el parámetro minChars
@@ -63,7 +66,19 @@ export const useSearch = ({
   // Exponer estado de error y una función de reintento (refetch)
   const isError = computed(() => !!queryIsError.value)
   const error = queryError
-  const retry = queryRefetch
+  const retry = () => {
+    logger.info('[useSearch] Retrying search query')
+    return queryRefetch()
+  }
+
+  const setSearchTerm = (term: string) => {
+    searchStore.setSearchTerm(term)
+  }
+
+  const clearSearch = () => {
+    logger.debug('[useSearch] Clearing search')
+    searchStore.resetStore()
+  }
 
   return {
     results,
@@ -71,8 +86,8 @@ export const useSearch = ({
     isError,
     error,
     retry,
-    searchTerm: searchStore.searchTerm,
-    setSearchTerm: searchStore.setSearchTerm,
-    clearSearch: searchStore.clearSearch
+    searchTerm: computed(() => searchStore.searchTerm),
+    setSearchTerm,
+    clearSearch
   }
 }

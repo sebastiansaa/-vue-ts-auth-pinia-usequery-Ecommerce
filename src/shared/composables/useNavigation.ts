@@ -1,6 +1,7 @@
 //la api usa ids para las categorías
 import { useRouter } from "vue-router"
 import { useNavStore } from "@/stores";
+import { logger } from "../services/logger";
 
 
 export const useNavigation = () => {
@@ -9,11 +10,13 @@ export const useNavigation = () => {
   const navStore = useNavStore(); // setCategory,    setCurrentSection,
 
   const handleCategory = (categoryId: number) => {
+    logger.debug(`[useNavigation] Navigating to category: ${categoryId}`)
     navStore.setCategory(categoryId);
     router.push(`/products/${categoryId}`);
   }
 
   const handleSection = (section: string) => {
+    logger.debug(`[useNavigation] Navigating to section: ${section}`)
     navStore.setCurrentSection(section)
     switch (section) {
       case 'about':
@@ -35,6 +38,7 @@ export const useNavigation = () => {
         router.push('/');
         break;
       default:
+        logger.warn(`[useNavigation] Unknown section: ${section}`)
         break;
     }
   }

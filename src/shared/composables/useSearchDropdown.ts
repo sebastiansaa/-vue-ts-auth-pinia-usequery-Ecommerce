@@ -1,4 +1,5 @@
 import { ref, computed, watch, type Ref } from 'vue'
+import { logger } from '../services/logger'
 
 interface Options {
   initial?: number
@@ -26,10 +27,12 @@ export function useSearchDropdown<T>(resultsRef: Ref<T[]>, opts: Options = {}) {
     const remain = results.value.length - shownCount.value
     if (remain <= 0) return
     shownCount.value = Math.min(shownCount.value + INCREMENT, results.value.length)
+    logger.debug(`[useSearchDropdown] Increased shown count to ${shownCount.value}`)
   }
 
   const reset = () => {
     shownCount.value = INITIAL
+    logger.debug('[useSearchDropdown] Reset shown count')
   }
 
   // Resetear cuando cambian los resultados

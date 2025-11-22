@@ -2,6 +2,7 @@
 // Diseñado para aceptar callbacks onFlush y onClear para sincronizar con un store o realizar side-effects.
 
 import { ref, watch, type Ref, unref } from 'vue'
+import { logger } from '../services/logger'
 
 export function useBufferedInput(
   initial: string | Ref<string> | undefined,
@@ -26,6 +27,7 @@ export function useBufferedInput(
     if (isComposing.value) return
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
+      logger.debug(`[useBufferedInput] Debounce flush: ${val}`)
       onFlush?.(val)
       timer = null
     }, debounceMs)
@@ -36,6 +38,7 @@ export function useBufferedInput(
       clearTimeout(timer)
       timer = null
     }
+    logger.debug(`[useBufferedInput] Manual flush: ${localValue.value}`)
     onFlush?.(localValue.value)
   }
 
@@ -45,6 +48,7 @@ export function useBufferedInput(
       timer = null
     }
     localValue.value = ''
+    logger.debug('[useBufferedInput] Cleared')
     onClear?.()
   }
 
@@ -58,6 +62,7 @@ export function useBufferedInput(
       clearTimeout(timer)
       timer = null
     }
+    logger.debug(`[useBufferedInput] Composition end flush: ${localValue.value}`)
     onFlush?.(localValue.value)
   }
 

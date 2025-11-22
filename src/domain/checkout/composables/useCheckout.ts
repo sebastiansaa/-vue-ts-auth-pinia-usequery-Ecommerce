@@ -2,8 +2,9 @@ import { useMutation } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { cartStore } from '@/domain/cart/stores/cartStore'
 import { completeCheckout } from '../services/paymentService'
-import type { CompleteCheckoutResponse } from '../services/paymentService'
-import type { CompleteCheckoutPayload } from '@/domain/checkout/interfaces/types'
+import { persistOrder, clearLocalCart } from '../helpers/persistence'
+import type { CompleteCheckoutResponse, CompleteCheckoutPayload } from '@/domain/checkout/interfaces/types'
+
 
 // Encapsula la lógica del proceso de checkout utilizando `useMutation` de Vue Query. Simula una integración con pasarela de pago, limpia el carrito tras el éxito y redirige al usuario a la vista de órdenes.
 
@@ -11,29 +12,27 @@ import type { CompleteCheckoutPayload } from '@/domain/checkout/interfaces/types
 export function useCheckout() {
   const router = useRouter()
   const cart = cartStore()
+
   const checkoutMutation = useMutation<CompleteCheckoutResponse, Error, CompleteCheckoutPayload>({
-    mutationFn: async (formData: any) => {
-      // Delegar al service centralizado
-      const data = await completeCheckout(formData)
+    // 1. La mutationFn se mantiene pura: solo entrada -> salida asíncrona
+    mutationFn: (formData: CompleteCheckoutPayload) => completeCheckout(formData),
 
-      // Guardar orden en localStorage (simulación de persistencia)
-      saveOrder(data.orderId || 'unknown', cart.cartItems, cart.totalPrice)
+    // 2. Los efectos secundarios van aquí
+    onSuccess: (data) => {
+      // Ahora tenemos acceso a la respuesta (data) y sabemos que fue exitoso
+      persistOrder(data.orderId ?? 'unknown', cart.cartItems, cart.totalPrice)
+      clearLocalCart(cart)
 
-      // Limpiar carrito localmente
-      if (typeof cart.clearCart === 'function') {
-        cart.clearCart()
-      } else {
-        const items = cart.cartItems || []
-        items.forEach((it: any) => cart.removeFromCart(it.product.id))
-      }
-
-      return data
-    },
-    onSuccess: () => {
+      // UI Feedback / Redirección
       setTimeout(() => {
         router.push({ path: '/orders', query: { success: 'true' } })
       }, 800)
     },
+
+    // Opcional: Manejo de errores global si lo necesitas
+    onError: (error) => {
+      console.error('Checkout falló', error)
+    }
   })
 
   return {
@@ -45,28 +44,3 @@ export function useCheckout() {
   }
 }
 
-function saveOrder(orderId: string, items: any[], total: number) {
-  const order = {
-    id: orderId,
-    date: new Date().toISOString(),
-    status: 'completed',
-    items: items.map(item => ({
-      id: item.product.id,
-      title: item.product.title,
-      image: item.product.image,
-      quantity: item.quantity,
-      price: item.product.price
-    })),
-    total
-  }
-
-  // Cargar órdenes existentes
-  const stored = localStorage.getItem('orders')
-  const orders = stored ? JSON.parse(stored) : []
-
-  // Agregar nueva orden al inicio
-  orders.unshift(order)
-
-  // Guardar (limitado a últimas 20 órdenes)
-  localStorage.setItem('orders', JSON.stringify(orders.slice(0, 20)))
-}

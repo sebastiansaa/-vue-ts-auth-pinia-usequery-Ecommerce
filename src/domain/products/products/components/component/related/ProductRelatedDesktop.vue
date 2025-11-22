@@ -33,12 +33,12 @@
 import { ref, computed } from 'vue'
 import ProductCardRelated from './ProductCardRelated.vue'
 import { BaseAccountButton } from '../../../../../../shared/components/ui/actions/buttons'
-import { useProductStore } from '../../../stores'
+import { useProductsStore } from '../../../stores/productsStore'
 import { useProductNavigation, useProducts } from '../../../composables'
 
 const { navigateToProduct } = useProductNavigation()
-const productStore = useProductStore()
-const product = productStore.selectedProductDTO
+const store = useProductsStore()
+const product = store.selectedProductDTO
 
 const categoryId = product?.category?.id ?? 0
 const { data: relatedProducts } = useProducts(categoryId)

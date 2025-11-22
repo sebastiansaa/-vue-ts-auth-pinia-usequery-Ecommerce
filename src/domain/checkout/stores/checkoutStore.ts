@@ -1,147 +1,180 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { performCardPayment, type CardFormRef } from '@/domain/checkout/helpers/performCardPayment'
+import { performCardPayment, type PerformCardPaymentError } from '@/domain/checkout/helpers/performCardPayment'
+import { autoTokenizeCard } from '@/domain/checkout/helpers/cardTokenization'
+import type { CardFormRef } from '@/domain/checkout/interfaces/types'
 import { useErrorHandler } from '@/shared/composables/useErrorHandler'
-import type { Customer, PaymentMethod, CompleteCheckoutPayload, PaymentIntent } from '@/domain/checkout/interfaces/types'
+import type { Customer, PaymentMethod, CompleteCheckoutPayload } from '@/domain/checkout/interfaces/types'
+import { logger } from '@/shared/services/logger'
+import { TokenizeReasons, CheckoutFailureReasons } from '@/domain/checkout/types/reasons'
+import type { Result } from '@/shared/types'
+
+//Orquesta el flujo de checkout para pagos
 
 export const useCheckoutStore = defineStore('checkout', () => {
-  const customer = ref<Customer | null>(null)
-  const payment = ref<PaymentMethod | null>(null)
-  const cardForm = ref<CardFormRef>(null)
-  const errorMessage = ref<string | null>(null)
-  const isProcessing = ref(false)
-  const success = ref(false)
+  // Estado reactivo (Privado)
+  const _customer = ref<Customer | null>(null)
+  const _payment = ref<PaymentMethod | null>(null)
+  const _errorMessage = ref<string | null>(null)
+  const _isProcessing = ref(false)
+  const _success = ref(false)
 
   const { handleError, handleSuccess } = useErrorHandler()
 
+  // Getters (Públicos - Readonly)
+  const customer = computed(() => _customer.value)
+  const payment = computed(() => _payment.value)
+  const errorMessage = computed(() => _errorMessage.value)
+  const isProcessing = computed(() => _isProcessing.value)
+  const success = computed(() => _success.value)
+
+  // Indica si el checkout está listo para pagar
+  const isCheckoutReady = computed(() => !!_customer.value && !!_payment.value?.method)
+
+  // Guarda datos del comprador
   function onCustomerConfirm(payload: Customer) {
-    customer.value = payload
+    _customer.value = payload
   }
 
+  // Guarda método de pago
   function onPaymentSelect(payload: PaymentMethod) {
-    payment.value = payload
+    _payment.value = payload
   }
 
-  /**
-   * Tokeniza la tarjeta automáticamente antes de procesar el pago.
-   */
-  async function autoTokenizeCard() {
-    if (!cardForm.value?.tokenizePayload) {
-      return null
-    }
-    const res = await cardForm.value.tokenizePayload()
-    if (!res || 'error' in res) return null
-    return res
-  }
+  /* Ejecuta el pago completo con tokenización automática.
+   * - Valida datos, Tokeniza , Crea y confirma el PaymentIntent - Devuelve payload completo o null   */
+  async function handlePayment(total: number, cardFormRef: CardFormRef): Promise<Result<CompleteCheckoutPayload>> {
+    if (!isCheckoutReady.value) return { ok: false, reason: CheckoutFailureReasons.NOT_READY }
 
-  function setCardForm(refValue: CardFormRef) {
-    cardForm.value = refValue
-  }
-
-  /**
-   * Maneja el flujo completo de pago con TOKENIZACIÓN AUTOMÁTICA.
-   *
-   * Responsabilidades:
-   * 1. Valida que existan customer y payment
-   * 2. Tokeniza la tarjeta automáticamente si falta (para método 'card')
-   * 3. Crea y confirma el PaymentIntent
-   * 4. Maneja estados: isProcessing, success, errorMessage
-   * 5. Devuelve CompleteCheckoutPayload con customer, payment y paymentIntent
-   *
-   * El usuario solo necesita:
-   * - Llenar campos de usuario y tarjeta
-   * - Hacer clic en "Pagar ahora"
-   * - El sistema tokeniza y procesa todo automáticamente
-   *
-   * @param total - Monto total a pagar
-   * @returns CompleteCheckoutPayload si exitoso, null si falla
-   */
-  async function handlePayment(total: number): Promise<CompleteCheckoutPayload | null> {
-    // Validaciones iniciales
-    if (!customer.value || !payment.value?.method) {
-      return null
+    // Precondición explícita: si se intenta pagar con tarjeta, la ref debe
+    // contener `tokenizePayload`.
+    if (_payment.value?.method === 'card' && !cardFormRef?.tokenizePayload) {
+      return { ok: false, reason: CheckoutFailureReasons.INVALID_CARD_FORM, details: 'cardFormRef missing tokenizePayload' }
     }
 
-    errorMessage.value = null
-    isProcessing.value = true
-    success.value = false
+    logger.info('[checkoutStore] handlePayment start', { total, hasCustomer: !!_customer.value, paymentMethod: _payment.value?.method ?? null })
+
+    resetErrors()
+    _isProcessing.value = true
+    _success.value = false
 
     try {
-      // TOKENIZACIÓN AUTOMÁTICA: Si el método es tarjeta y no está tokenizada
-      if (payment.value.method === 'card' && !payment.value.details) {
-        const tokenData = await autoTokenizeCard()
-        if (tokenData) {
-          payment.value = { method: 'card', details: tokenData }
+      if (!_customer.value) throw new Error('Cliente no establecido')
+      if (!_payment.value) throw new Error('Método de pago no establecido')
+
+      const currentCustomer = _customer.value
+      let currentPayment = _payment.value
+
+      // Tokenizar si es tarjeta y no tiene detalles
+      if (currentPayment.method === 'card' && !currentPayment.details) {
+        logger.info('[checkoutStore] tokenization - starting', { currentPayment: currentPayment.method })
+        const tokenResult = await autoTokenizeCard(cardFormRef)
+        logger.info('[checkoutStore] tokenization - result', { tokenResult })
+        if (!tokenResult.ok) {
+          // Diferenciar mensajes según causa
+          if (tokenResult.reason === TokenizeReasons.NO_FORM) {
+            _errorMessage.value = 'Formulario de tarjeta no disponible.'
+            return { ok: false, reason: CheckoutFailureReasons.INVALID_CARD_FORM }
+          }
+          _errorMessage.value = `Error al tokenizar tarjeta: ${String(tokenResult.error ?? 'unknown')}`
+          return { ok: false, reason: CheckoutFailureReasons.TOKENIZATION_FAILED, details: tokenResult.error }
         }
+
+        // Asignar detalles tokenizados
+        _payment.value = { ...currentPayment, details: tokenResult.payload }
+        currentPayment = _payment.value
       }
 
       // Procesar pago con tarjeta
-      if (payment.value.method === 'card') {
+      if (currentPayment.method === 'card') {
+        const activePayment = _payment.value as PaymentMethod
+        logger.info('[checkoutStore] calling performCardPayment', { total, customer: !!currentCustomer, paymentMethod: activePayment.method })
         const res = await performCardPayment({
-          customer: customer.value,
-          payment: payment.value,
-          cardForm: cardForm.value,
+          customer: currentCustomer,
+          payment: activePayment,
+          cardForm: cardFormRef,
           total,
         })
+        logger.info('[checkoutStore] performCardPayment result', { res })
 
         if (!res.success) {
-          errorMessage.value = `Pago en estado: ${String(res.paymentIntent?.status ?? 'unknown')}`
-          return null
+          _errorMessage.value = `Pago en estado: ${String(res.paymentIntent?.status ?? 'unknown')}`
+          return { ok: false, reason: CheckoutFailureReasons.PAYMENT_INCOMPLETE, details: res.paymentIntent?.status }
+        }
+
+        // Asegurarse de que el paymentIntent indica éxito real
+        const succeeded = res.paymentIntent?.status === 'succeeded'
+        if (!succeeded) {
+          _errorMessage.value = `Pago no completado: ${String(res.paymentIntent?.status ?? 'unknown')}`
+          return { ok: false, reason: CheckoutFailureReasons.PAYMENT_NOT_SUCCEEDED, details: res.paymentIntent?.status }
         }
 
         handleSuccess('Pago confirmado. Completando orden...')
-        success.value = true
+        _success.value = true
 
         return {
-          customer: customer.value,
-          payment: payment.value,
-          paymentIntent: res.paymentIntent,
+          ok: true, payload: {
+            customer: currentCustomer,
+            payment: activePayment,
+            paymentIntent: res.paymentIntent,
+          }
         }
       }
 
-      // Otros métodos de pago (futuro)
-      success.value = true
+      // Otros métodos aún no implementados: no marcar success hasta implementar
       return {
-        customer: customer.value,
-        payment: payment.value,
+        ok: true, payload: {
+          customer: currentCustomer,
+          payment: _payment.value,
+        }
       }
     } catch (err: any) {
+      logger.error('[checkoutStore] handlePayment error', { err })
+
+      // Manejo específico de errores de dominio
+      if ((err as PerformCardPaymentError)?.stage) {
+        const pErr = err as PerformCardPaymentError
+        _errorMessage.value = `Error (${pErr.stage}): ${pErr.message}`
+        _success.value = false
+        return { ok: false, reason: CheckoutFailureReasons.EXCEPTION, details: pErr }
+      }
+
       const info = handleError(err, 'CheckoutStore')
-      errorMessage.value = info.message
-      success.value = false
-      return null
+      // Enriquecer mensaje con contexto mínimo
+      _errorMessage.value = `Error en pago: ${info.message}`
+      _success.value = false
+      return { ok: false, reason: CheckoutFailureReasons.EXCEPTION, details: info }
     } finally {
-      isProcessing.value = false
+      _isProcessing.value = false
     }
   }
 
-  /**
-   * Resetea el estado del checkout a sus valores iniciales.
-   *
-   * Útil para:
-   * - Limpiar el estado al salir de la vista de checkout
-   * - Preparar un nuevo checkout después de completar uno exitoso
-   * - Evitar que mensajes de éxito persistan al volver al carrito
-   */
+  // Limpia el estado del checkout
   function resetCheckout() {
-    customer.value = null
-    payment.value = null
-    cardForm.value = null
-    errorMessage.value = null
-    isProcessing.value = false
-    success.value = false
+    resetErrors()
+    resetPaymentState()
+    _customer.value = null
+  }
+
+  function resetErrors() {
+    _errorMessage.value = null
+    _isProcessing.value = false
+  }
+
+  function resetPaymentState() {
+    _payment.value = null
+    _success.value = false
   }
 
   return {
     customer,
     payment,
-    cardForm,
     errorMessage,
     isProcessing,
     success,
+    isCheckoutReady,
     onCustomerConfirm,
     onPaymentSelect,
-    setCardForm,
     handlePayment,
     resetCheckout,
   }

@@ -1,56 +1,62 @@
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { loadStripe } from '@stripe/stripe-js'
-import { FORCE_MOCK_PAYMENTS as forceMock, STRIPE_PUBLISHABLE_KEY } from '@/shared/config'
+import { ref, onMounted, onBeforeUnmount, computed, type Ref } from 'vue'
+import { FORCE_MOCK_PAYMENTS, STRIPE_PUBLISHABLE_KEY } from '@/shared/config/config'
+import { initStripeElements, destroyStripeElements } from '@/domain/checkout/helpers/stripe'
+import type { Stripe, StripeElements, StripeCardElement } from '@stripe/stripe-js'
+import type { CardTokenPayload } from '@/domain/checkout/interfaces/types'
 
-type StripeRef = any
-
-export type TokenizeSuccess = {
-  token: string
-  last4?: string | null
-  brand?: string | null
-  cardholder?: string | null
-}
-
+// Tipos auxiliares exportados para consumidores
+export type TokenizeSuccess = CardTokenPayload
 export type TokenizeError = { error: any }
-
 export type TokenizeResult = TokenizeSuccess | TokenizeError
 
-export type TokenizePayload = {
-  token: string
-  last4?: string | null
-  brand?: string | null
-  cardholder?: string | null
-}
-/*
-rquesta el flujo completo de pago con tarjeta:
- * - Valida los parámetros esenciales (cliente, método, total, formulario)
- * - Crea un `PaymentIntent` vía backend (mock o real)
- * - Confirma el pago en el cliente (Stripe Elements o mock)
- * Devuelve un resultado estructurado con `success`, el `paymentIntent` y deja la finalización del checkout
- * (creación de orden) a cargo del caller para evitar duplicación de lógica.
- * Lanza errores explícitos si falta algún dato clave o si falla la confirmación.
-*/
-export const usePaymentCard = (publishableKey?: string, containerRef?: { value: HTMLElement | null }) => {
-  // Forzar modo mock desde config centralizada
+/**
+ * Composable para pagos con tarjeta (Stripe o mock).
+ * Orquesta el flujo completo de pago: inicialización, tokenización y confirmación.
+ */
+export const usePaymentCard = (
+  publishableKey?: string,
+  // Aceptamos una Ref de Vue estándar para el contenedor
+  containerRef?: Ref<HTMLElement | null>
+) => {
 
+  // Estado del formulario (usado principalmente en modo Mock)
   const cardholder = ref('')
   const number = ref('')
   const exp = ref('')
   const cvc = ref('')
-  const processing = ref(false)
-  const error = ref<string | null>(null)
-  const mode = ref<'stripe' | 'mock'>('mock')
-  const tokenizingLabel = ref('Tokenizando...')
 
-  // Stripe refs
-  const stripeRef: { value: StripeRef | null } = ref(null)
-  const elementsRef: { value: any | null } = ref(null)
-  const cardElementRef: { value: any | null } = ref(null)
+  // Estado de la UI (Privado)
+  const _processing = ref(false)
+  const _error = ref<string | null>(null)
+  const _mode = ref<'stripe' | 'mock'>('mock')
+  const _tokenizingLabel = ref('Tokenizando...')
+
+  // Getters (Públicos - Readonly)
+  const processing = computed(() => _processing.value)
+  const error = computed(() => _error.value)
+  const mode = computed(() => _mode.value)
+  const tokenizingLabel = computed(() => _tokenizingLabel.value)
+
+  // Referencias internas de Stripe
+  const stripeRef = ref<Stripe | null>(null)
+  const elementsRef = ref<StripeElements | null>(null)
+  const cardElementRef = ref<StripeCardElement | null>(null)
+
+  // Computed: Validación básica para habilitar botón de pago (solo relevante en Mock)
+  const isFilled = computed(() => {
+    if (_mode.value === 'stripe') return true // Stripe Elements maneja su propia validación interna
+
+    const hasHolder = !!(cardholder.value && cardholder.value.trim().length > 0)
+    // Validación laxa para mock
+    const hasNumber = !!(number.value && number.value.replace(/\s+/g, '').length >= 12)
+    const hasExp = !!(exp.value && exp.value.replace(/\s+/g, '').length >= 3)
+    const hasCvc = !!(cvc.value && cvc.value.replace(/\s+/g, '').length >= 3)
+
+    return hasHolder && hasNumber && hasExp && hasCvc
+  })
 
   /**
-   * Detecta la marca de tarjeta basándose en el número
-   * @param num - Número de tarjeta
-   * @returns Marca de la tarjeta: 'visa', 'mastercard', 'amex' o 'unknown'
+   * Helper interno: Detecta marca de tarjeta (solo visual/mock)
    */
   const detectBrand = (num: string) => {
     if (/^4/.test(num)) return 'visa'
@@ -60,75 +66,52 @@ export const usePaymentCard = (publishableKey?: string, containerRef?: { value: 
   }
 
   /**
-   * Inicializa Stripe Elements en el contenedor proporcionado.
-   * Si falla o está en modo mock, usa el fallback de inputs manuales.
-   * Se ejecuta automáticamente al montar el componente.
+   * Inicialización: Decide si usar Stripe o Mock
    */
   onMounted(async () => {
     try {
-      if (forceMock) {
-        mode.value = 'mock'
-        return
-      }
+      // Prioridad: prop > env > config default
+      const key = publishableKey ?? (import.meta.env.VITE_STRIPE_PK as string) ?? STRIPE_PUBLISHABLE_KEY
 
-      const key = publishableKey ?? (import.meta.env.VITE_STRIPE_PK as string | undefined)
-      if (!key) {
-        mode.value = 'mock'
-        return
-      }
+      // initStripeElements maneja la lógica de carga de script y creación de elementos
+      const res = await initStripeElements(key, containerRef?.value ?? null, !!FORCE_MOCK_PAYMENTS)
 
-      stripeRef.value = await loadStripe(key)
-      if (!stripeRef.value) {
-        mode.value = 'mock'
-        return
-      }
-
-      elementsRef.value = stripeRef.value.elements()
-      cardElementRef.value = elementsRef.value.create('card', { style: { base: { fontSize: '16px' } } })
-
-      if (containerRef?.value && cardElementRef.value && cardElementRef.value.mount) {
-        cardElementRef.value.mount(containerRef.value)
-        mode.value = 'stripe'
-      } else {
-        mode.value = 'mock'
-      }
+      stripeRef.value = res.stripe
+      elementsRef.value = res.elements
+      cardElementRef.value = res.card
+      _mode.value = res.mode
     } catch (err) {
-      mode.value = 'mock'
+      console.warn('[usePaymentCard] Fallo al iniciar Stripe, usando modo Mock', err)
+      _mode.value = 'mock'
     }
   })
 
-  /**
-   * Limpia los recursos de Stripe Elements antes de desmontar el componente.
-   * Desmonta el cardElement del DOM de forma segura.
-   */
   onBeforeUnmount(() => {
-    try {
-      cardElementRef.value?.unmount()
-    } catch (e) {
-      /* ignore */
-    }
+    destroyStripeElements(cardElementRef.value)
   })
 
   /**
-   * Tokeniza la tarjeta usando Stripe o mock según el modo activo.
-   * En modo Stripe: crea un PaymentMethod usando Stripe Elements.
-   * En modo mock: genera un token simulado con validación básica de campos.
-   * @returns TokenizeResult con token y datos de tarjeta, o error
+   * Acción Principal: Tokenizar
+   * Convierte los datos de la tarjeta en un token seguro (o simulado)
    */
   const tokenize = async (): Promise<TokenizeResult | undefined> => {
-    error.value = null
-    processing.value = true
+    _error.value = null
+    _processing.value = true
+
     try {
-      if (mode.value === 'stripe' && stripeRef.value && cardElementRef.value) {
+      // 1. Flujo Stripe Real
+      if (_mode.value === 'stripe' && stripeRef.value && cardElementRef.value) {
         const res = await stripeRef.value.createPaymentMethod({
           type: 'card',
           card: cardElementRef.value,
           billing_details: { name: cardholder.value || undefined },
         })
+
         if (res.error) {
-          error.value = res.error.message || 'Error al tokenizar con Stripe'
+          _error.value = res.error.message || 'Error al tokenizar con Stripe'
           return { error: res.error }
         }
+
         const pm = res.paymentMethod
         return {
           token: pm.id,
@@ -138,39 +121,39 @@ export const usePaymentCard = (publishableKey?: string, containerRef?: { value: 
         }
       }
 
-      // Mock fallback
+      // 2. Flujo Mock
       if (!number.value || !exp.value || !cvc.value) {
-        error.value = 'Completa los datos de la tarjeta.'
-        return { error: new Error(error.value) }
+        _error.value = 'Completa los datos de la tarjeta.'
+        return { error: new Error(_error.value) }
       }
+
       const sanitized = number.value.replace(/\s+/g, '')
       const last4 = sanitized.slice(-4)
       const brand = detectBrand(sanitized)
+
+      // Simular latencia de red
       await new Promise((r) => setTimeout(r, 600))
+
       const token = `tok_mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
       return { token, last4, brand, cardholder: cardholder.value }
+
     } catch (err: any) {
-      error.value = err?.message ?? String(err)
+      _error.value = err?.message ?? String(err)
       return { error: err }
     } finally {
-      processing.value = false
+      _processing.value = false
     }
   }
 
   /**
-   * Wrapper de tokenize que normaliza el resultado al formato TokenizePayload.
-   * Útil para componentes que necesitan un payload consistente para emitir eventos.
-   * @returns TokenizePayload con datos normalizados, TokenizeError, o undefined
+   * Wrapper para tokenize que normaliza la salida
+   * Usado por el componente padre para obtener el payload limpio
    */
-  const tokenizePayload = async (): Promise<{
-    token: string
-    last4?: string | null
-    brand?: string | null
-    cardholder?: string | null
-  } | TokenizeError | undefined> => {
+  const tokenizePayload = async () => {
     const res = await tokenize()
     if (!res) return undefined
     if ('error' in res) return res
+
     return {
       token: res.token,
       last4: res.last4 ?? null,
@@ -180,43 +163,43 @@ export const usePaymentCard = (publishableKey?: string, containerRef?: { value: 
   }
 
   /**
-   * Confirma el pago en el cliente usando el client_secret del PaymentIntent.
-   * En modo Stripe: ejecuta confirmCardPayment con 3DS si es necesario.
-   * En modo mock: simula confirmación exitosa con delay.
-   * @param clientSecret - El client_secret del PaymentIntent creado en backend
-   * @returns Objeto con paymentIntent si exitoso, o error
+   * Acción Secundaria: Confirmar Pago (3DS)
+   * Se llama después de que el backend crea el PaymentIntent si requiere acción adicional
    */
   const confirmPayment = async (clientSecret: string) => {
-    error.value = null
-    processing.value = true
+    _error.value = null
+    _processing.value = true
+
     try {
-      if (mode.value === 'stripe' && stripeRef.value && cardElementRef.value) {
+      if (_mode.value === 'stripe' && stripeRef.value && cardElementRef.value) {
         const res = await stripeRef.value.confirmCardPayment(clientSecret, {
           payment_method: {
             card: cardElementRef.value,
             billing_details: { name: cardholder.value || undefined },
           },
         })
+
         if (res.error) {
-          error.value = res.error.message || 'Error en la confirmación del pago'
+          _error.value = res.error.message || 'Error en la confirmación del pago'
           return { error: res.error }
         }
         return { paymentIntent: res.paymentIntent }
       }
 
-      // Modo mock: simulamos confirmación exitosa
+      // Mock confirm
       await new Promise((r) => setTimeout(r, 800))
       return { paymentIntent: { status: 'succeeded', id: `pi_mock_${Date.now()}` } }
+
     } catch (err: any) {
-      error.value = err?.message ?? String(err)
+      _error.value = err?.message ?? String(err)
       return { error: err }
     } finally {
-      processing.value = false
+      _processing.value = false
     }
   }
 
   return {
-    // state
+    // State
     cardholder,
     number,
     exp,
@@ -225,11 +208,14 @@ export const usePaymentCard = (publishableKey?: string, containerRef?: { value: 
     error,
     mode,
     tokenizingLabel,
-    // stripe refs (expuestos por compatibilidad)
+    isFilled,
+
+    // Refs (expuestas para casos avanzados)
     stripeRef,
     elementsRef,
     cardElementRef,
-    // actions
+
+    // Actions
     tokenize,
     tokenizePayload,
     confirmPayment,

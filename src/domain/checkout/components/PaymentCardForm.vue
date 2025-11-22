@@ -59,8 +59,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import usePaymentCard, { type TokenizePayload } from '../composables/usePaymentCard'
+import { ref, computed, onMounted } from 'vue'
+import { FORCE_MOCK_PAYMENTS as forceMock } from '@/shared/config'
+import usePaymentCard from '../composables/usePaymentCard'
+import type { CardTokenPayload } from '@/domain/checkout/interfaces/types'
 
 const props = defineProps<{ publishableKey?: string }>()
 const emit = defineEmits(['tokenized'])
@@ -80,10 +82,25 @@ const {
   stripeRef,
   elementsRef,
   cardElementRef,
+  isFilled,
   tokenize,
   tokenizePayload,
   confirmPayment,
 } = usePaymentCard(props.publishableKey, containerRef)
+
+// Auto-prefill en desarrolllo cuando estamos en modo mock para acelerar pruebas
+onMounted(() => {
+  try {
+    if (mode.value === 'mock' && forceMock) {
+      if (!cardholder.value) cardholder.value = 'Dev Tester'
+      if (!number.value) number.value = '4242 4242 4242 4242'
+      if (!exp.value) exp.value = '04/28'
+      if (!cvc.value) cvc.value = '123'
+    }
+  } catch (_) {
+    /* noop */
+  }
+})
 
 // Formateo del número de tarjeta: insertar espacio cada 4 dígitos
 const numberFormatted = computed({
@@ -118,7 +135,7 @@ async function handleTokenizeClick() {
   emit('tokenized', res)
 }
 
-defineExpose({ confirmPayment, tokenizePayload, stripeRef, elementsRef })
+defineExpose({ confirmPayment, tokenizePayload, stripeRef, elementsRef, isFilled })
 </script>
 
 <style scoped>

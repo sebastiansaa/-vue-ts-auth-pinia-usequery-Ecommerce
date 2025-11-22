@@ -90,8 +90,6 @@ function openCheckout() {
 function remove(id: number) {
   cart.removeFromCart(id)
 }
-
-// formatPrice ahora proviene de shared/helpers/formatPrice
 </script>
 
 <style scoped>

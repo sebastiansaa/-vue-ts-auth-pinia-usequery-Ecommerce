@@ -1,7 +1,7 @@
 /** Composable que orquesta toda la lógica del SearchBar.
  * Encapsula: búsqueda, buffering, dropdown visibility, navegación, click outside, etc. */
 
-import { ref, computed, onBeforeUnmount, type Ref } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useSearch } from './useSearch'
 import { useProductNavigation } from '../../products/products/composables'
 import type { ProductInterface } from '../../products/products/interfaces'
@@ -11,13 +11,14 @@ import {
   useDropdownNavigation,
 } from '../../../shared/composables'
 import { SEARCH_CONFIG } from '../config/search.config'
+import { logger } from '../../../shared/services/logger'
 
 export function useSearchBar() {
-  // ===== State =====
+  // ===== Estado =====
   const containerRef = ref<HTMLElement | null>(null)
   const showDropdown = ref(false)
 
-  // ===== Data Fetching & Search Logic =====
+  // ===== Lógica de Búsqueda y Datos =====
   const {
     searchTerm: searchTermRef,
     setSearchTerm,
@@ -29,26 +30,35 @@ export function useSearchBar() {
     retry,
   } = useSearch({ debounceMs: 0 }) // sin debounce aquí, delegado a useBufferedInput
 
-  // ===== Navigation =====
+  // ===== Navegación =====
   const { navigateToProduct } = useProductNavigation()
 
-  // ===== Buffered Input (debounce + IME) =====
+  // ===== Input con Buffer (debounce + IME) =====
   const buffered = useBufferedInput(searchTermRef, {
     debounceMs: SEARCH_CONFIG.DEBOUNCE_MS,
-    onFlush: setSearchTerm,
-    onClear: clearSearch,
+    onFlush: (term) => {
+      logger.debug(`[useSearchBar] Flushing buffered input: ${term}`)
+      setSearchTerm(term)
+    },
+    onClear: () => {
+      logger.debug('[useSearchBar] Clearing buffered input')
+      clearSearch()
+    },
   })
 
-  // ===== Click Outside Detection =====
+  // ===== Detección de Click Fuera =====
   const clickOutside = useClickOutside(
     containerRef,
     () => {
-      showDropdown.value = false
+      if (showDropdown.value) {
+        logger.debug('[useSearchBar] Click outside detected, closing dropdown')
+        showDropdown.value = false
+      }
     },
     { listenToEscape: true },
   )
 
-  // ===== Keyboard Navigation =====
+  // ===== Navegación por Teclado =====
   const dropdownNav = useDropdownNavigation(
     results,
     (item: ProductInterface) => {
@@ -57,7 +67,7 @@ export function useSearchBar() {
     { isOpen: showDropdown },
   )
 
-  // ===== Computed Properties =====
+  // ===== Propiedades Computadas =====
   const activeDescendant = computed(() => {
     const idx = dropdownNav.activeIndex?.value ?? -1
     return idx >= 0 ? `search-item-${idx}` : undefined
@@ -65,8 +75,19 @@ export function useSearchBar() {
 
   const activeIndex = computed(() => dropdownNav.activeIndex?.value ?? -1)
 
-  // ===== Event Handlers =====
+  const hasResults = computed(() => results.value.length > 0)
+  const ariaExpanded = computed(() => showDropdown.value)
+
+  // ===== Manejadores de Eventos =====
+  const resetSearchBar = () => {
+    logger.debug('[useSearchBar] Reseteando barra de búsqueda')
+    showDropdown.value = false
+    clearSearch()
+    buffered.clear()
+  }
+
   const handleFocus = (): void => {
+    logger.debug('[useSearchBar] Input enfocado')
     showDropdown.value = true
   }
 
@@ -75,33 +96,37 @@ export function useSearchBar() {
   }
 
   const handleSubmit = (): void => {
+    logger.debug('[useSearchBar] Submit disparado')
+    if (isError.value) {
+      logger.error('[useSearchBar] Intento de submit con error activo', error.value)
+    }
     buffered.flush()
     showDropdown.value = true
   }
 
   const handleClear = (): void => {
+    logger.debug('[useSearchBar] Clear disparado')
     buffered.clear()
   }
 
   const handleProductSelection = (product: ProductInterface): void => {
+    logger.info(`[useSearchBar] Producto seleccionado: ${product.id} - ${product.title}`)
     navigateToProduct(product)
-    showDropdown.value = false
-    clearSearch()
-    buffered.clear()
+    resetSearchBar()
   }
 
   const handleHover = (index: number): void => {
     dropdownNav.setActive(index)
   }
 
-  // Lifecycle
+  // Ciclo de Vida
   onBeforeUnmount(() => {
     clickOutside.stop()
     buffered.stop()
     // dropdownNav se limpia internamente
   })
 
-  //  Public API
+  //  API Pública
   return {
     // Refs
     containerRef,
@@ -113,6 +138,7 @@ export function useSearchBar() {
 
     // Search state
     results,
+    hasResults,
     isLoading,
     isError,
     error,
@@ -121,6 +147,7 @@ export function useSearchBar() {
     // Navigation state
     activeDescendant,
     activeIndex,
+    ariaExpanded,
 
     // Event handlers
     handleFocus,

@@ -1,75 +1,53 @@
-import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCheckoutStore } from '@/domain/checkout/stores/checkoutStore'
-import type { CardFormRef } from '@/domain/checkout/helpers/performCardPayment'
+import type { CardFormRef } from '@/domain/checkout/interfaces/types'
 
 /**
  * Composable para orquestar el flujo del CheckoutSidebar.
- *
- * Responsabilidades:
- * - Conectar con checkoutStore
- * - Manejar referencia al formulario de tarjeta
- * - Exponer estado reactivo y acciones
- * - Logging de debugging
- *
- * Este composable facilita la separación de lógica del componente CheckoutSidebar,
- * haciéndolo más testeable y mantenible.
  */
 export function useCheckoutSidebar() {
   const checkout = useCheckoutStore()
-  const { customer, payment, errorMessage, isProcessing, success } = storeToRefs(checkout)
-  const { onCustomerConfirm, onPaymentSelect, setCardForm, handlePayment } = checkout
+  const { customer, payment, errorMessage, isProcessing, success, isCheckoutReady } = storeToRefs(checkout)
+  const { onCustomerConfirm, onPaymentSelect, handlePayment } = checkout
 
+  // Referencia local al componente de tarjeta.
+  // No necesitamos sincronizarla con el store globalmente, solo pasarla al pagar.
   const cardFormRef = ref<CardFormRef>(null)
-
-  // Mantener el store sincronizado con la referencia del formulario de tarjeta.
-  // El formulario puede montarse/desmontarse dinámicamente (v-if según método),
-  // por eso observamos la ref y actualizamos el store cuando cambie.
-  const stopWatch = watch(
-    cardFormRef,
-    (val) => {
-      setCardForm(val)
-    },
-    { immediate: true }
-  )
-
-  onBeforeUnmount(() => {
-    // Asegurarse de quitar referencia al desmontar
-    setCardForm(null)
-    stopWatch()
-  })
 
   /**
    * Maneja el clic en el botón "Pagar ahora".
-   * - Llama a handlePayment del store (que incluye tokenización automática)
-   * - Devuelve el payload del checkout si es exitoso
    */
   async function handlePay(total: number) {
-    // Si el formulario de tarjeta aún no está montado (cardFormRef -> store.cardForm === null),
-    // esperar hasta que esté disponible o hasta que expire el timeout.
-    const waitForCardForm = async (timeout = 1500, interval = 50) => {
-      const start = Date.now()
-      // Accedemos directamente al store.cardForm (no destructurado) para comprobar su valor
-      // porque setCardForm actualiza ese valor.
-      // Si no hay método de pago 'card' no hace falta esperar.
-      if (payment.value?.method !== 'card') return true
-      // Si ya está disponible, continuar
-      if (checkout.cardForm) return true
-
-      while (Date.now() - start < timeout) {
-        if (checkout.cardForm) return true
-        await new Promise((resolve) => setTimeout(resolve, interval))
-      }
-      return false
+    // Validación defensiva simple
+    if (payment.value?.method === 'card' && !cardFormRef.value) {
+      console.error('Intento de pago con tarjeta sin referencia al formulario')
+      return { ok: false, reason: 'form_missing' }
     }
 
-    await waitForCardForm()
-    const result = await handlePayment(total)
-    return result
+    // Pasamos la ref directamente. El store no necesita haberla guardado antes.
+    return await handlePayment(total, cardFormRef.value)
   }
 
+  const canPay = computed(() => {
+    if (!isCheckoutReady.value) return false
+
+    if (payment.value?.method === 'card') {
+      const card = cardFormRef.value
+      if (!card) return false
+
+      // Soporte para isFilled como valor directo o Ref
+      const val = card.isFilled
+      if (val && typeof val === 'object' && 'value' in val) {
+        return (val as any).value === true
+      }
+      return val === true
+    }
+    return true
+  })
+
   return {
-    // Estado reactivo
+    // Estado
     customer,
     payment,
     errorMessage,
@@ -81,5 +59,6 @@ export function useCheckoutSidebar() {
     onCustomerConfirm,
     onPaymentSelect,
     handlePay,
+    canPay,
   }
 }

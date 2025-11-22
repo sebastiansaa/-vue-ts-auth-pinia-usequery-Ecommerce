@@ -15,11 +15,11 @@
 <script setup lang="ts">
 import { handleImageError, truncate } from '@/domain/products/products/helpers'
 import { computed, defineEmits, defineProps } from 'vue'
-import { useProductStore } from '../stores/productStore'
+import { useProductsStore } from '../stores/productsStore'
 
 const props = defineProps<{ productId: number }>()
-const productStore = useProductStore()
-const product = computed(() => productStore.productsList.find((p) => p.id === props.productId))
+const store = useProductsStore()
+const product = computed(() => store.productsList.find((p) => p.id === props.productId))
 
 const emit = defineEmits(['select'])
 

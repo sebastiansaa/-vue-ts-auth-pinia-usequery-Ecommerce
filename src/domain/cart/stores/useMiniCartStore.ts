@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { logger } from '@/shared/services/logger'
+import type { MiniCartState } from '@/domain/cart/interface'
 
 /**
  * Store Pinia para controlar el estado del mini-cart drawer.
@@ -7,7 +9,7 @@ import { ref, computed } from 'vue'
  */
 export const useMiniCartStore = defineStore('miniCart', () => {
   // Estado interno (privado)
-  const _state = ref<'closed' | 'mini' | 'expanded'>('closed')
+  const _state = ref<MiniCartState>('closed')
 
   // Getters (computed)
   const state = computed(() => _state.value)
@@ -17,19 +19,29 @@ export const useMiniCartStore = defineStore('miniCart', () => {
 
   // Actions
   const openMini = () => {
+    logger.debug('[miniCartStore] openMini')
     _state.value = 'mini'
   }
 
   const openExpanded = () => {
+    logger.debug('[miniCartStore] openExpanded')
     _state.value = 'expanded'
   }
 
   const expand = () => {
-    if (_state.value === 'mini') _state.value = 'expanded'
+    if (_state.value === 'mini') {
+      logger.debug('[miniCartStore] expand (from mini)')
+      _state.value = 'expanded'
+    }
   }
 
   const close = () => {
+    logger.debug('[miniCartStore] close')
     _state.value = 'closed'
+  }
+
+  const resetStore = () => {
+    close()
   }
 
   return {
@@ -43,5 +55,7 @@ export const useMiniCartStore = defineStore('miniCart', () => {
     openExpanded,
     expand,
     close,
+    resetStore,
   }
 })
+

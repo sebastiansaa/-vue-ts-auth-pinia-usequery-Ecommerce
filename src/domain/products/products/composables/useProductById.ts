@@ -7,8 +7,12 @@ import { PRODUCTS_CONFIG } from "../../config/products.config"
 import { getProductById } from "../services"
 import { unref } from "vue"
 import type { Ref } from "vue"
+import { logger } from "@/shared/services/logger"
 
 export const useProductById = (id: Ref<number> | number) => {
+  const productId = unref(id)
+  logger.debug(`[useProductById] Initializing for id: ${productId}`)
+
   return useQuery<ProductInterface>({
     queryKey: ['product', id],
     queryFn: () => getProductById(unref(id)),

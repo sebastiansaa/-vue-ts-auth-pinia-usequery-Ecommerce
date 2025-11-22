@@ -2,7 +2,8 @@
 
 import type { ProductInterface } from '../interfaces'
 import { useRouter } from 'vue-router'
-import { useProductStore } from '../stores'
+import { useProductsStore } from '../stores/productsStore'
+import { logger } from '@/shared/services/logger'
 
 export function useProductNavigation() {
   const router = useRouter()
@@ -13,16 +14,21 @@ export function useProductNavigation() {
    */
   const navigateToProduct = async (product: ProductInterface) => {
     if (!product || !product.id) {
-      throw new Error('navigateToProduct: product or product.id is missing')
+      const error = new Error('navigateToProduct: product or product.id is missing')
+      logger.error('[useProductNavigation] navigateToProduct error', error)
+      throw error
     }
 
     const categoryId = product.category?.id
     if (!categoryId) {
-      throw new Error('navigateToProduct: product.category.id is missing')
+      const error = new Error('navigateToProduct: product.category.id is missing')
+      logger.error('[useProductNavigation] navigateToProduct error', error)
+      throw error
     }
     try {
-      const productStore = useProductStore()
-      productStore.selectProductById(product.id)
+      logger.debug(`[useProductNavigation] navigateToProduct: ${product.id}`)
+      const store = useProductsStore()
+      store.selectProductById(product.id)
       //Select explicita del product. Evita que quede "pegado" el anterior.
 
       return await router.push({
@@ -33,7 +39,7 @@ export function useProductNavigation() {
         },
       })
     } catch (err) {
-      console.error('Failed to navigate to product', err)
+      logger.error('Failed to navigate to product', err as Error)
       throw err
     }
   }
@@ -42,15 +48,18 @@ export function useProductNavigation() {
    *  Útil cuando no se dispone del objeto completo.*/
   const navigateToProductById = async (categoryId: string, productId: string) => {
     if (!categoryId || !productId) {
-      throw new Error('navigateToProductById: categoryId and productId are required')
+      const error = new Error('navigateToProductById: categoryId and productId are required')
+      logger.error('[useProductNavigation] navigateToProductById error', error)
+      throw error
     }
     try {
+      logger.debug(`[useProductNavigation] navigateToProductById: cat=${categoryId}, prod=${productId}`)
       return await router.push({
         name: 'productDetail',
         params: { categoryId: categoryId.toString(), id: productId.toString() },
       })
     } catch (err) {
-      console.error('Failed to navigate to product by id', err)
+      logger.error('Failed to navigate to product by id', err as Error)
       throw err
     }
   }
@@ -58,16 +67,22 @@ export function useProductNavigation() {
   /** Navega a una categoría usando su slug. Útil para listar productos por categoría. */
   const navigateToCategory = async (categorySlug: string) => {
     if (!categorySlug) {
-      throw new Error('navigateToCategory: categorySlug is required')
+      const error = new Error('navigateToCategory: categorySlug is required')
+      logger.error('[useProductNavigation] navigateToCategory error', error)
+      throw error
     }
 
     try {
+      logger.debug(`[useProductNavigation] navigateToCategory: ${categorySlug}`)
+      const store = useProductsStore()
+      store.resetSelection()
+
       return await router.push({
         name: 'productsByCategory',
         params: { category: categorySlug },
       })
     } catch (err) {
-      console.error('Failed to navigate to category', err)
+      logger.error('Failed to navigate to category', err as Error)
       throw err
     }
   }
