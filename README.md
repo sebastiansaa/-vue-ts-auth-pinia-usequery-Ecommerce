@@ -2,7 +2,7 @@
 
 **Ecommerce moderno sin usuarios, solo comprar.**
 
-Este proyecto es una tienda online construida con Vue 3, Pinia, Vite y TanStack Query, que permite explorar productos, navegar por categorías, agregar al carrito y simular el proceso de compra y pago, todo sin autenticación ni gestión de usuarios. El objetivo es demostrar una arquitectura limpia, modular y profesional, enfocada en la experiencia de compra directa y el código mantenible.
+Este proyecto es una tienda online construida con Vue 3, Pinia, Vite y TanStack Query, que permite explorar productos, navegar por categorías, agregar al carrito y simular el proceso de compra y pago, con autenticación . El objetivo es demostrar una arquitectura limpia, modular y profesional, enfocada en la experiencia de compra directa y el código mantenible.
 
 ## Características principales
 
@@ -52,6 +52,7 @@ public/
 
 - Vue 3
 - Pinia
+- jwt-decode
 - Vue Router
 - Vite
 - **TypeScript** (tipado estricto en toda la app)
