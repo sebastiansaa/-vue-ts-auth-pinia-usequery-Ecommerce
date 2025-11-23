@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import ProductRelatedDesktop from './ProductRelatedDesktop.vue'
 import ProductRelatedMobile from './ProductRelatedMobile.vue'
-import { useBreakPoints } from '../../../../../../shared/composables'
+import { useBreakPoints } from '@/shared/composables'
 import { Skeleton } from '@/shared/components/layout'
 const { isDesktop, isReady } = useBreakPoints()
 </script>

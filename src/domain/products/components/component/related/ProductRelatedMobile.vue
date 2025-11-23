@@ -37,8 +37,8 @@ const visibleProducts = computed(() =>
 
 <style scoped>
 .product-related-mobile {
-  margin-top: 2rem;
-  padding: 1.25rem 0;
+  margin-top: 0;
+  padding: 0 0 1.25rem 0;
   position: relative;
 }
 

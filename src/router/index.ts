@@ -18,12 +18,12 @@ const router = createRouter({
     {
       path: '/products/:categoryId',
       name: 'productsByCategory',
-      component: () => import('../domain/products/products/views/ProductsView.vue'),
+      component: () => import('../domain/products/views/ProductsView.vue'),
     },
     {
       path: '/products/:categoryId/:id',
       name: 'productDetail',
-      component: () => import('../domain/products/products/views/ProductDetailView.vue'),
+      component: () => import('../domain/products/views/ProductDetailView.vue'),
       props: true
     },
     {

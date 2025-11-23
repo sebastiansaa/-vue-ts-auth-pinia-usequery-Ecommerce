@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ProductInterface } from '../../products/products/interfaces'
+import type { ProductInterface } from '../../products/interfaces'
 import { Skeleton } from '@/shared/components/layout'
 import { computed, toRef } from 'vue'
 import { useSearchDropdown } from '../../../shared/composables'

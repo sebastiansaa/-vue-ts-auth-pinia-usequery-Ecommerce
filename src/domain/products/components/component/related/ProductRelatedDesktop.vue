@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import ProductCardRelated from './ProductCardRelated.vue'
-import { BaseAccountButton } from '../../../../../../shared/components/ui/actions/buttons'
+import { BaseAccountButton } from '@/shared/components/ui/actions/buttons'
 import { useProductsStore } from '../../../stores/productsStore'
 import { useProductNavigation, useProducts } from '../../../composables'
 
@@ -73,8 +73,8 @@ const carouselTransform = computed(() => {
 
 <style scoped>
 .product-related-desktop {
-  margin-top: 2rem;
-  padding: 1.25rem;
+  margin-top: 0;
+  padding: 0 1.25rem 1.25rem;
   position: relative;
 }
 

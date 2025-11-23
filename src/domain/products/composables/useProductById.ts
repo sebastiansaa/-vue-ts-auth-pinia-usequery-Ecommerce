@@ -3,7 +3,7 @@
 
 import { useQuery } from "@tanstack/vue-query"
 import type { ProductInterface } from "../interfaces"
-import { PRODUCTS_CONFIG } from "../../config/products.config"
+import { PRODUCTS_CONFIG } from "../config/products.config"
 import { getProductById } from "../services"
 import { unref } from "vue"
 import type { Ref } from "vue"

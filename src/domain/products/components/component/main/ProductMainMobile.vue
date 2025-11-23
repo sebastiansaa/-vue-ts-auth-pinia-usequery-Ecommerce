@@ -47,7 +47,7 @@ import ProductRelated from '../related/ProductRelated.vue'
 
 .related-section {
   width: 100%;
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
 }
 
 .reviews-section {

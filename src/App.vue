@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useQueryClient } from '@tanstack/vue-query'
 import NavComponent from './shared/components/navigation/nav/NavComponent.vue'
-import { getProducts } from './domain/products/products/services/getProducts'
+import { getProducts } from './domain/products/services/getProducts'
 
 const queryClient = useQueryClient()
 

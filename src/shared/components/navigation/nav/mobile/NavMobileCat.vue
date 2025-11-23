@@ -28,7 +28,7 @@ import { defineProps } from 'vue'
 import Drawer from '@/shared/components/ui/display/Drawer.vue'
 import { BaseAccountButton } from '@/shared/components/ui/actions/buttons'
 import { useNavigation } from '@/shared/composables'
-import { useCategories } from '@/domain/products/products/composables/useCategories'
+import { useCategories } from '@/domain/products/composables/useCategories'
 import { getCategoryLabel } from '@/shared/helpers'
 
 const props = defineProps({

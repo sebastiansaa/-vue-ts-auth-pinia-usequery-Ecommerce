@@ -1,4 +1,4 @@
-import type { ProductInterface } from "@/domain/products/products/interfaces";
+import type { ProductInterface } from "@/domain/products/interfaces";
 import type { CartItem } from "@/domain/cart/interface";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";

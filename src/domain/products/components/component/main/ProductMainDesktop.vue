@@ -69,7 +69,7 @@ import ProductRelated from '../related/ProductRelated.vue'
 
 .related-section {
   grid-area: related;
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .reviews-section {
@@ -87,7 +87,7 @@ import ProductRelated from '../related/ProductRelated.vue'
 
   .related-section,
   .reviews-section {
-    margin-top: 1.5rem;
+    margin-top: 0.5rem;
   }
 }
 </style>

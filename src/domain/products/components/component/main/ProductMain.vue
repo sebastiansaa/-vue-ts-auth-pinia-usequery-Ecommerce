@@ -10,7 +10,7 @@
 import ProductMainMobile from './ProductMainMobile.vue'
 import ProductMainDesktop from './ProductMainDesktop.vue'
 
-import { useBreakPoints } from '../../../../../../shared/composables'
+import { useBreakPoints } from '@/shared/composables'
 import { Skeleton } from '@/shared/components/layout'
 
 const { isDesktop, isReady } = useBreakPoints()

@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getCategories } from '../services/getCategories'
 import type { CategoryInterface } from '../interfaces'
-import { PRODUCTS_CONFIG } from '../../config/products.config'
+import { PRODUCTS_CONFIG } from '../config/products.config'
 import { logger } from '@/shared/services/logger'
 
 const MAIN_CATEGORY_SLUGS = ['clothes', 'electronics', 'furniture', 'shoes', 'miscellaneous']

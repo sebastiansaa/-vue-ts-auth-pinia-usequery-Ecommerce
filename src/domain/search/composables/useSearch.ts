@@ -5,8 +5,8 @@ import { useSearchStore } from "../stores/searchStore"
 import { useQuery } from "@tanstack/vue-query";
 import { computed, ref, unref, type Ref } from "vue";
 import { watchDebounced } from '@vueuse/core'
-import { getProducts } from "../../products/products/services/getProducts";
-import type { ProductInterface } from "../../products/products/interfaces";
+import { getProducts } from "../../products/services/getProducts";
+import type { ProductInterface } from "../../products/interfaces";
 import { SEARCH_CONFIG } from "../config/search.config";
 import { logger } from "../../../shared/services/logger";
 

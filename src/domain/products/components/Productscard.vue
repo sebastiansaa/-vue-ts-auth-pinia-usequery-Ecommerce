@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { handleImageError, truncate } from '@/domain/products/products/helpers'
+import { handleImageError, truncate } from '@/domain/products/helpers'
 import { computed, defineEmits, defineProps } from 'vue'
 import { useProductsStore } from '../stores/productsStore'
 
