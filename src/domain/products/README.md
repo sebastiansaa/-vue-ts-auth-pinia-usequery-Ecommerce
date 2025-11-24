@@ -56,3 +56,20 @@ Obtiene la lista de productos, opcionalmente filtrada por categoría.
 ## Services
 
 Los servicios (`getProducts`, `getProductById`, `getCategories`) envuelven las llamadas a la API y añaden una capa de **Logging** estandarizado.
+
+## Convenciones del Dominio
+
+### Services
+
+- **Responsabilidad**: Contener la lógica de negocio y llamadas a API.
+- **Errores**: Normalizar errores y usar logging centralizado.
+- **Tipado**: Retornar tipos definidos (Interfaces/DTOs), nunca `any`.
+
+### Composables
+
+- **Naming**: Prefijo `use`.
+- **Reactividad**: Aceptar `Ref` o primitivos (usar `unref`). Retornar `Ref` o `ComputedRef`.
+
+### Helpers
+
+- **Propósito**: Funciones puras para formateo, truncado, etc.

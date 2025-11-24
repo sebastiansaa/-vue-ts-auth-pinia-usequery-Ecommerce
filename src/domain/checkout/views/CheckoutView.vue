@@ -22,6 +22,8 @@ import { useCheckoutStore } from '../stores/checkoutStore'
 import { prefetchStripe } from '../helpers/stripe'
 import { STRIPE_PUBLISHABLE_KEY } from '@/shared/config'
 
+import type { CompleteCheckoutPayload } from '../interfaces/types'
+
 const router = useRouter()
 const cart = cartStore()
 const checkoutStore = useCheckoutStore()
@@ -29,7 +31,7 @@ const checkoutStore = useCheckoutStore()
 const items = computed(() => cart.cartItems)
 const total = computed(() => cart.totalPrice)
 
-const { processing, success, performCheckout, error } = useCheckout()
+const { performCheckout, error } = useCheckout()
 
 // Resetear el estado del checkout al salir de la vista
 // Esto limpia customer, payment, errorMessage, etc. para el próximo checkout
@@ -50,7 +52,7 @@ function handleCancel() {
   router.back()
 }
 
-function handleConfirm(formData: any) {
+function handleConfirm(formData: CompleteCheckoutPayload) {
   performCheckout(formData)
 }
 </script>

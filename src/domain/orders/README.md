@@ -66,3 +66,15 @@ import { useOrders } from '@/domain/orders/composables/useOrders'
 
 const { orders, isLoading } = useOrders()
 ```
+
+## Convenciones del Dominio
+
+### Persistencia
+
+- **Separación**: La lógica de `localStorage` reside en `helpers/`, nunca directamente en componentes o stores.
+- **Manejo de Errores**: Los helpers de persistencia deben manejar excepciones de parsing (JSON) de forma segura.
+
+### Vue Query
+
+- **Encapsulación**: `useQuery` se envuelve siempre en un composable personalizado (`useOrders`).
+- **Keys**: Usar keys consistentes para el cache.

@@ -42,3 +42,15 @@ El componente principal es `SearchBar`, que utiliza `useSearchBar` para coordina
 - **Encapsulación**: El store no expone estado mutable.
 - **Reutilización**: Lógica compleja extraída en composables compartidos.
 - **Trazabilidad**: Logging en acciones y eventos clave.
+
+## Convenciones del Dominio
+
+### Performance
+
+- **Debounce**: Las búsquedas en tiempo real deben usar debounce (configurado en `config/`) para evitar sobrecarga.
+- **Caching**: Utilizar `staleTime` adecuado para evitar re-fetching innecesario de productos.
+
+### Interacción
+
+- **Accesibilidad**: Los dropdowns de búsqueda deben ser navegables por teclado.
+- **Feedback**: Mostrar estado de carga (`isLoading`) y mensajes de "sin resultados".

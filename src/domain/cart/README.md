@@ -21,10 +21,9 @@ Maneja la lista de productos en el carrito y el cálculo de totales.
   - Persistir el carrito en `localStorage` automáticamente.
 - **Estado Privado**:
   - `_cartItems`: Lista mutable de items.
-  - `_totalPrice`: Total calculado.
 - **API Pública (Readonly)**:
   - `cartItems`: Computed array.
-  - `totalPrice`: Computed number.
+  - `totalPrice`: Computed number (derivado puro).
   - `count`: Computed number (cantidad total de items).
 - **Acciones**:
   - `addToCart(product)`: Agrega o incrementa cantidad.
@@ -32,7 +31,7 @@ Maneja la lista de productos en el carrito y el cálculo de totales.
   - `updateQuantity(id, quantity)`: Actualiza cantidad (elimina si es 0).
   - `clearCart()`: Vacía el carrito.
 - **Automatización**:
-  - Utiliza un `watch` profundo sobre `_cartItems` para recalcular el total y guardar en `localStorage` cada vez que hay cambios.
+  - Utiliza un `watch` profundo sobre `_cartItems` para guardar en `localStorage` cada vez que hay cambios.
 
 ### 2. `useMiniCartStore`
 
@@ -68,3 +67,20 @@ cart.addToCart(myProduct)
 // Leer (Reactivo)
 console.log(cart.totalPrice)
 ```
+
+## Convenciones del Dominio
+
+### Stores
+
+- **Encapsulación**: El estado (`ref`) es siempre privado (prefijo `_`). Se expone solo a través de `computed` (read-only).
+- **Acciones**: Todas las mutaciones de estado ocurren dentro de acciones exportadas.
+- **Reset**: Cada store debe implementar un método `resetStore` para limpiar su estado.
+
+### Helpers
+
+- **Pureza**: Funciones puras sin efectos secundarios.
+- **Ubicación**: Lógica compleja o reutilizable se mueve a `helpers/`.
+
+### Tipado
+
+- **Estricto**: No usar `any`. Definir interfaces en `interfaces/`.

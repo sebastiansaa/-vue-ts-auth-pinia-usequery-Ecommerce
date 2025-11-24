@@ -9,22 +9,21 @@ export const cartStore = defineStore('cartStore', () => {
 
   // Estado interno (privado)
   const _cartItems = ref<CartItem[]>([]);
-  const _totalPrice = ref<number>(0);
 
   // Getters (computed)
   const cartItems = computed(() => _cartItems.value);
-  const totalPrice = computed(() => _totalPrice.value);
-  const count = computed(() => _cartItems.value.reduce((s, it) => s + (it.quantity || 0), 0));
 
-  // Automatización: Recálculo y Persistencia
-  watch(_cartItems, (items) => {
-    // Recalcular total
-    _totalPrice.value = items.reduce((total, item) => {
+  const totalPrice = computed(() => {
+    return _cartItems.value.reduce((total, item) => {
       const price = Number(item.product?.price ?? 0);
       return total + price * (item.quantity ?? 0);
     }, 0);
+  });
 
-    // Persistir
+  const count = computed(() => _cartItems.value.reduce((s, it) => s + (it.quantity || 0), 0));
+
+  // Automatización: Persistencia
+  watch(_cartItems, (items) => {
     saveCartToStorage(items);
   }, { deep: true });
 
