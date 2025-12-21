@@ -1,27 +1,27 @@
 // Controla qué mensajes se muestran en la consola dependiendo de si estás en modo desarrollo o producción.
 
-const isDev = typeof import.meta !== 'undefined' ? Boolean((import.meta as any).env?.DEV) : false
+const isDev = typeof import.meta !== 'undefined' ? Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV) : false
 
-function safeConsole(method: 'info' | 'warn' | 'error', ...args: any[]) {
+function safeConsole(method: 'info' | 'warn' | 'error', ...args: unknown[]) {
   try {
-    // eslint-disable-next-line no-console
+
     console[method](...args)
-  } catch (_) {
+  } catch {
     // ignore
   }
 }
 
 export const logger = {
-  debug: (...args: any[]) => {
-    if (isDev) safeConsole('debug' as any, ...args)
-  },
-  info: (...args: any[]) => {
+  debug: (...args: unknown[]) => {
     if (isDev) safeConsole('info', ...args)
   },
-  warn: (...args: any[]) => {
+  info: (...args: unknown[]) => {
+    if (isDev) safeConsole('info', ...args)
+  },
+  warn: (...args: unknown[]) => {
     if (isDev) safeConsole('warn', ...args)
   },
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     safeConsole('error', ...args)
   },
 }

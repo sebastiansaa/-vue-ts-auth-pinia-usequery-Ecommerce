@@ -2,6 +2,7 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
@@ -9,11 +10,19 @@ import 'vue-toastification/dist/index.css'
 import App from './App.vue'
 import router from './router'
 
+
+const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
+
 const app = createApp(App)
 
-app.use(createPinia())
+app.use(pinia)
 app.use(router)
 app.use(VueQueryPlugin)
+
+// Configurar interceptores de Auth
+import { setupAuthInterceptors } from '@/domain/auth/interceptors/authInterceptor'
+setupAuthInterceptors()
 
 // Configurar Toast
 app.use(Toast, {
@@ -29,7 +38,7 @@ app.use(Toast, {
   closeButton: 'button',
   icon: true,
   rtl: false,
-  maxToasts: 3
+  maxToasts: 3,
 })
 
 app.mount('#app')

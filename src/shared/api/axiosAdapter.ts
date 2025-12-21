@@ -22,3 +22,5 @@ export const axiosAdapter: HttpClient = {
     return await instance.delete(url, config);
   },
 };
+
+export { instance as axiosInstance };

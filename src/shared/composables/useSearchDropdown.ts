@@ -7,12 +7,10 @@ interface Options {
   resetOn?: Ref<unknown> | undefined
 }
 
-/**
- * Composable genérico para manejar paginación incremental en dropdowns/listas.
- * @param resultsRef - Ref con el array de items a paginar
- * @param opts - Opciones de configuración (initial, increment, resetOn)
- * @returns displayed, increaseShown, reset, shownCount
- */
+// Composable genérico para manejar paginación incremental en dropdowns/listas.
+// @param resultsRef - Ref con el array de items a paginar
+// @param opts - Opciones de configuración (initial, increment, resetOn)
+// @returns displayed, increaseShown, reset, shownCount
 export function useSearchDropdown<T>(resultsRef: Ref<T[]>, opts: Options = {}) {
   const INITIAL = opts.initial ?? 5
   const INCREMENT = opts.increment ?? 5

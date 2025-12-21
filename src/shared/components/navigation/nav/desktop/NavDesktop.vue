@@ -11,6 +11,14 @@
     <div class="nav__section nav__section--right">
       <IconButton
         class="icon-btn-nav-desktop"
+        aria-label="Iniciar sesión"
+        @click="handleLoginClick"
+        role="button"
+      >
+        <UserCircleIcon class="nav-icon" />
+      </IconButton>
+      <IconButton
+        class="icon-btn-nav-desktop"
         aria-label="Carrito"
         @click="handleCartClick"
         role="button"
@@ -26,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ShoppingCartIcon } from '@heroicons/vue/24/outline'
+import { ShoppingCartIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
 import { IconButton, LogoButton } from '@/shared/components/ui/actions/buttons'
 import SearchBar from '@/domain/search/components/SearchBar.vue'
 import NavDesktopCat from './NavDesktopCat.vue'
@@ -46,6 +54,10 @@ const handleCartClick = () => {
   } else {
     router.push('/cart')
   }
+}
+
+const handleLoginClick = () => {
+  router.push('/auth')
 }
 </script>
 

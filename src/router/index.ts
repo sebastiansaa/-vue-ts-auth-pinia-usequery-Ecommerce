@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import AboutView from '@/views/AboutView.vue'
+import { authGuard } from '@/domain/auth/guards/authGuard'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,6 +15,11 @@ const router = createRouter({
       path: '/about',
       name: 'about',
       component: AboutView,
+    },
+    {
+      path: '/auth',
+      name: 'auth',
+      component: () => import('../domain/auth/views/AuthView.vue'),
     },
     {
       path: '/products/:categoryId',
@@ -35,11 +41,13 @@ const router = createRouter({
       path: '/checkout',
       name: 'checkout',
       component: () => import('../domain/checkout/views/CheckoutView.vue'),
+      beforeEnter: authGuard,
     },
     {
       path: '/orders',
       name: 'orders',
       component: () => import('../domain/orders/views/OrdersListView.vue'),
+      beforeEnter: authGuard,
     },
 
   ],

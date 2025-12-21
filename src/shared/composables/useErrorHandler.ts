@@ -7,12 +7,12 @@ import { logger } from '@/shared/services/logger'
 export function useErrorHandler() {
   const toast = useToast()
 
-  const handleError = (error: any, context?: string) => {
+  const handleError = (error: unknown, context?: string) => {
     logger.error(`Error in ${context || 'unknown'}:`, error)
 
     // Normalizar primero (sin efectos)
     const apiNorm = normalizeApiError(error)
-    const maybeStripe = (error && (error.error || error.code)) ? normalizeStripeError(error) : null
+    const maybeStripe = (error && typeof error === 'object' && ('error' in error || 'code' in error)) ? normalizeStripeError(error) : null
 
     let message = maybeStripe?.message ?? apiNorm.message ?? 'Ha ocurrido un error inesperado.'
     let title = 'Error'

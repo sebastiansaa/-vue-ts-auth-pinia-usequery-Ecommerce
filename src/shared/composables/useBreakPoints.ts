@@ -1,9 +1,7 @@
-/**
- * Composable para manejar breakpoints responsive: mobile y desktop/PC.
- * Refactorizado para usar VueUse's useBreakpoints + useWindowSize.
- */
+// Composable para manejar breakpoints responsive: mobile y desktop/PC.
+// Refactorizado para usar VueUse's useBreakpoints + useWindowSize.
 import { computed } from 'vue'
-import { useBreakpoints as vueUseBreakpoints, breakpointsTailwind, useWindowSize } from '@vueuse/core'
+import { useBreakpoints as vueUseBreakpoints, useWindowSize } from '@vueuse/core'
 import { SHARED_CONFIG } from '../config/shared.config'
 
 export function useBreakPoints() {

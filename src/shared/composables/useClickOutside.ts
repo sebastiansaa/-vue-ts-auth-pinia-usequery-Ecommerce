@@ -1,10 +1,8 @@
-/**
- * Detecta clicks/touches fuera de un elemento contenedor y ejecuta una callback.
- * Refactorizado para usar VueUse's onClickOutside + useEventListener.
- *
- * Nota: VueUse's onClickOutside usa 'pointerdown' por defecto, que cubre tanto
- * clicks de mouse como touch events en dispositivos móviles.
- */
+// Detecta clicks/touches fuera de un elemento contenedor y ejecuta una callback.
+// Refactorizado para usar VueUse's onClickOutside + useEventListener.
+//
+// Nota: VueUse's onClickOutside usa 'pointerdown' por defecto, que cubre tanto
+// clicks de mouse como touch events en dispositivos móviles.
 import type { Ref } from 'vue'
 import { onClickOutside as vueUseClickOutside, useEventListener } from '@vueuse/core'
 import { logger } from '../services/logger'

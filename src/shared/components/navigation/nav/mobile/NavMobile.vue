@@ -12,6 +12,14 @@
         <div class="nav__right-icons">
           <button
             class="icon-btn-nav-movil"
+            aria-label="Iniciar sesión"
+            @click="handleLoginClick"
+            role="button"
+          >
+            <UserCircleIcon class="nav-icon" />
+          </button>
+          <button
+            class="icon-btn-nav-movil"
             aria-label="Carrito"
             @click="handleCartClick"
             role="button"
@@ -39,18 +47,20 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ShoppingCartIcon } from '@heroicons/vue/24/outline'
+import { ShoppingCartIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
 import { LogoButton } from '@/shared/components/ui/actions/buttons'
 import { useNavigation } from '@/shared/composables/useNavigation'
 import { cartStore } from '@/domain/cart/stores/cartStore'
 import { useMiniCartStore } from '@/domain/cart/stores/useMiniCartStore'
+import { useRouter } from 'vue-router'
 
 import NavMobileCat from './NavMobileCat.vue'
 import SearchBar from '@/domain/search/components/SearchBar.vue'
 
 // menú móvil local
 const menuOpen = ref(false)
-const { handleCategory, handleSection } = useNavigation()
+const { handleSection } = useNavigation()
+const router = useRouter()
 
 const cart = cartStore()
 const count = computed(() => cart.count)
@@ -67,6 +77,10 @@ function handleCartClick() {
   } else {
     handleSectionMobile('cart')
   }
+}
+
+function handleLoginClick() {
+  router.push('/auth')
 }
 </script>
 

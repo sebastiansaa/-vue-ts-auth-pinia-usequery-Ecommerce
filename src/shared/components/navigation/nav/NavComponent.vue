@@ -11,7 +11,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import NavDesktop from './desktop/NavDesktop.vue'
 import NavMobile from './mobile/NavMobile.vue'
 import { useBreakPoints } from '@/shared/composables'
