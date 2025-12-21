@@ -80,6 +80,6 @@ export function mapProductToUpdateDTO(p: Partial<ProductInterface>): UpdateProdu
   if (p.price !== undefined) dto.price = p.price;
   if (p.description !== undefined) dto.description = p.description;
   if (p.images !== undefined) dto.images = p.images;
-  if (p.category !== undefined) dto.categoryId = p.category.id;
+  if (p.category?.id !== undefined) dto.categoryId = p.category.id;
   return dto;
 }
