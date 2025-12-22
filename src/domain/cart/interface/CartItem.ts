@@ -1,9 +1,14 @@
 import type { ProductInterface } from '@/domain/products/interfaces'
 
 /**
- * Representa un ítem en el carrito de compras. Combina un producto con su cantidad seleccionada.
+ * Ítem de carrito enriquecido para la UI. Puede venir de backend (solo productId y pricing)
+ * o de la cache de productos (product completo). Si `product` no está presente, los valores
+ * de `price` y `lineTotal` se usan como fallback para renderizar.
  */
 export interface CartItem {
-  product: ProductInterface
+  productId: number
+  product?: ProductInterface
   quantity: number
+  price?: number
+  lineTotal?: number
 }

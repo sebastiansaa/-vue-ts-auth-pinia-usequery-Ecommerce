@@ -17,11 +17,11 @@ export function persistOrder(orderId: string, items: any[], total: number) {
     date: new Date().toISOString(),
     status: 'completed',
     items: itemsSnapshot.map((item: any) => ({
-      id: item.product.id,
-      title: item.product.title,
-      image: item.product.image,
+      id: item.product?.id ?? item.productId,
+      title: item.product?.title ?? 'Producto',
+      image: item.product?.image ?? item.product?.images?.[0] ?? '',
       quantity: item.quantity,
-      price: item.product.price,
+      price: item.price ?? item.product?.price ?? 0,
     })),
     total,
   }

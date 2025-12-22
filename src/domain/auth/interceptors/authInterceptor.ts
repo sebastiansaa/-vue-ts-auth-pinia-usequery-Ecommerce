@@ -1,6 +1,7 @@
 import { axiosInstance } from "@/shared/api/axiosAdapter";
 import { useAuthStore } from "../stores/authStore";
 import type { InternalAxiosRequestConfig } from "axios";
+import { useToast } from "vue-toastification";
 // El interceptor se inicializo en el main.ts
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -45,7 +46,13 @@ export function setupAuthInterceptors() {
       const originalRequest = error.config;
       if (!originalRequest) return Promise.reject(error);
 
-      if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh-token')) {
+      // Respuesta de autorización: notificar y no reintentar
+      if (error.response?.status === 403) {
+        try { useToast().error('No autorizado: se requiere un rol con permisos'); } catch { /* noop */ }
+        return Promise.reject(error);
+      }
+
+      if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
         if (isRefreshing) {
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject, config: originalRequest });

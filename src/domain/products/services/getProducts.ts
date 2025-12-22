@@ -3,13 +3,12 @@
 import { productsApi } from "../api/productsApi";
 import type { ProductInterface } from "../interfaces";
 import { logger } from "@/shared/services/logger";
-import { mapProductListDTO } from "./mapperBackendShape";
+import { mapProductListDTO } from "./mapperBackendShapeProduct";
 
-export const getProducts = async (categoryId?: number): Promise<ProductInterface[]> => {
+export const getProducts = async (params?: { page?: number; limit?: number; categoryId?: number }): Promise<{ products: ProductInterface[]; total: number }> => {
   try {
-    const response = await productsApi.getAll(categoryId);
-    const mapped = mapProductListDTO(response.data);
-    return mapped.products;
+    const response = await productsApi.getAll(params);
+    return mapProductListDTO(response.data);
   } catch (error) {
     logger.error("Error fetching products:", error as Error);
     throw error;

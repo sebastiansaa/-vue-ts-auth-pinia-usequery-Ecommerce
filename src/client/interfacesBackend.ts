@@ -1,5 +1,5 @@
 // Uso: interfaces que definen la forma de las respuestas del backend para el cliente
-export interface ProductResponse {
+export interface ProductDTO {
   id: number;
   title: string;
   slug: string;
@@ -11,14 +11,15 @@ export interface ProductResponse {
   categoryId: number;
   createdAt: string; // ISO
   updatedAt: string; // ISO
+  deletedAt?: string | null;
 }
 
-export interface ProductListResponse {
-  products: ProductResponse[];
+export interface ProductListDTO {
+  products: ProductDTO[];
   total: number;
 }
 
-export interface CategoryResponse {
+export interface CategoryDTO {
   id: number;
   title: string;
   slug: string;
@@ -30,6 +31,26 @@ export interface CategoryResponse {
   updatedAt: string;
   deletedAt?: string | null;
 }
+
+///////////////////////////////////////////////////
+
+export interface CartItemDTO {
+  productId: number;
+  quantity: number;
+  price?: number;
+  lineTotal: number;
+}
+
+export interface CartDTO {
+  id: string;
+  userId: string;
+  items: CartItemDTO[];
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+//////////////////////////
 
 export type PaymentStatus = 'PENDING' | 'AUTHORIZED' | 'PAID' | 'FAILED';
 
@@ -45,21 +66,6 @@ export interface PaymentResponse {
   updatedAt: string;
 }
 
-export interface CartItemResponse {
-  productId: number;
-  quantity: number;
-  price?: number;
-  lineTotal: number;
-}
-
-export interface CartResponse {
-  id: string;
-  userId: string;
-  items: CartItemResponse[];
-  total: number;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface AddressResponse {
   id: string;

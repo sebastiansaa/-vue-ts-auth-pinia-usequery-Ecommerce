@@ -1,18 +1,19 @@
 import { z } from 'zod'
 
-export const CreatePaymentIntentResponseSchema = z.object({
-    client_secret: z.string(),
+export const PaymentResponseSchema = z.object({
+    paymentId: z.string(),
+    orderId: z.string(),
+    amount: z.number(),
+    status: z.string(),
+    externalPaymentId: z.string().optional().nullable(),
+    clientSecret: z.string().optional().nullable(),
+    provider: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
 })
 
-export const CompleteCheckoutResponseSchema = z.object({
-    success: z.boolean(),
-    orderId: z.string().optional(),
-})
-
-export type CreatePaymentIntentResponse = z.infer<typeof CreatePaymentIntentResponseSchema>
-export type CompleteCheckoutResponse = z.infer<typeof CompleteCheckoutResponseSchema>
+export type PaymentResponse = z.infer<typeof PaymentResponseSchema>
 
 export default {
-    CreatePaymentIntentResponseSchema,
-    CompleteCheckoutResponseSchema,
+    PaymentResponseSchema,
 }

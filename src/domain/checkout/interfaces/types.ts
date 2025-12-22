@@ -37,14 +37,20 @@ export interface Order {
   [key: string]: any
 }
 
-export interface CompleteCheckoutPayload {
-  customer: Customer
-  payment: PaymentMethod
-  paymentIntent?: PaymentIntent | null
+export interface PaymentResponse {
+  paymentId: string
+  orderId: string
+  amount: number
+  status: string
+  externalPaymentId?: string | null
+  clientSecret?: string | null
+  provider: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type CardFormRef = {
-  confirmPayment: (clientSecret: string) => Promise<{ paymentIntent?: PaymentIntent; error?: any }>
+  confirmPayment?: (clientSecret: string) => Promise<{ paymentIntent?: PaymentIntent; error?: any }>
   tokenizePayload?: () => Promise<CardTokenPayload | { error: any } | undefined>
   isFilled?: boolean | { value: boolean } // Puede ser ref o valor directo
 } | null

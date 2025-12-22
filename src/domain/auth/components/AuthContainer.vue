@@ -37,9 +37,9 @@ const handleLogin = async (data: LoginPayload) => {
 
 const handleRegister = async (data: RegisterPayload) => {
   try {
-    // TODO: Implementar registro cuando el endpoint esté disponible
-    console.log('Register data:', data)
-    toast.info('Funcionalidad de registro en desarrollo')
+    await authStore.register(data.email, data.password)
+    toast.success('Registro completado, sesión iniciada')
+    router.push('/')
   } catch (error) {
     toast.error('Error al registrarse. Intenta nuevamente.')
     console.error('Register error:', error)

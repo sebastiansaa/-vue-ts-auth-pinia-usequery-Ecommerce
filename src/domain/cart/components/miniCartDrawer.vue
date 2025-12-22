@@ -14,21 +14,27 @@
 
       <div class="mini-cart__body" v-if="items.length > 0">
         <ul class="mini-cart__list">
-          <li v-for="item in items" :key="item.product.id" class="mini-cart__item">
+          <li
+            v-for="item in items"
+            :key="item.product?.id ?? item.productId"
+            class="mini-cart__item"
+          >
             <img
-              :src="item.product.images?.[0] || ''"
+              :src="item.product?.images?.[0] || ''"
               alt=""
               class="mini-cart__thumb"
-              v-if="item.product.images"
+              v-if="item.product?.images?.length"
             />
             <div class="mini-cart__meta">
-              <div class="mini-cart__title">{{ item.product.title }}</div>
+              <div class="mini-cart__title">{{ item.product?.title ?? 'Producto' }}</div>
               <div class="mini-cart__qty">x{{ item.quantity }}</div>
-              <div class="mini-cart__price">{{ formatPrice(item.product.price) }}</div>
+              <div class="mini-cart__price">
+                {{ formatPrice(item.price ?? item.product?.price ?? 0) }}
+              </div>
             </div>
             <button
               class="mini-cart__remove"
-              @click="remove(item.product.id)"
+              @click="remove(item.productId ?? item.product?.id)"
               aria-label="Eliminar"
             >
               ×
@@ -87,7 +93,8 @@ function openCheckout() {
   goToCheckout()
 }
 
-function remove(id: number) {
+function remove(id?: number) {
+  if (typeof id !== 'number') return
   cart.removeFromCart(id)
 }
 </script>

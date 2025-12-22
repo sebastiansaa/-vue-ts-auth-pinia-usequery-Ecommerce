@@ -10,6 +10,9 @@ export const serverAdapter = {
     post: async (url: string, data?: unknown, config?: AxiosRequestConfig) => {
         return await instance.post(url, data, config)
     },
+    patch: async (url: string, data?: unknown, config?: AxiosRequestConfig) => {
+        return await instance.patch(url, data, config)
+    },
     put: async (url: string, data?: unknown, config?: AxiosRequestConfig) => {
         return await instance.put(url, data, config)
     },

@@ -1,0 +1,10 @@
+export * from './AdminUser';
+export * from './AdminProduct';
+export * from './AdminOrder';
+export * from './AdminInventory';
+export * from './AdminPayment';
+export interface UploadImageResponse {
+  productId: number;
+  filename: string;
+  path: string;
+}

@@ -67,7 +67,7 @@ export const usePaymentNavigation = (initialProductId?: number) => {
 
     // Validación de negocio: Verificar si el producto seleccionado sigue en el carrito
     if (_productId.value !== null) {
-      const exists = store.cartItems.some((item) => item.product.id === _productId.value)
+      const exists = store.cartItems.some((item) => item.product?.id === _productId.value)
       if (!exists) {
         logger.warn(
           `[usePaymentNavigation] productId ${_productId.value} not found in cart. Resetting.`,

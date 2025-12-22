@@ -5,7 +5,7 @@
     <ul v-else class="items-list">
       <CartItemRow
         v-for="it in items"
-        :key="it.product.id"
+        :key="it.product?.id ?? it.productId"
         :item="it"
         @remove="$emit('remove', $event)"
       />

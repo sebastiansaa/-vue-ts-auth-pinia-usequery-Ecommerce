@@ -43,7 +43,7 @@ const handleAddToCart = () => {
 function handleBuyNow() {
   if (!product) return
 
-  const isAlreadyInCart = cart.cartItems.some((item) => item.product.id === product.id)
+  const isAlreadyInCart = cart.cartItems.some((item) => item.product?.id === product.id)
   if (!isAlreadyInCart) {
     cart.addToCart(product)
   }

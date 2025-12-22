@@ -1,12 +1,16 @@
 <template>
   <li class="cart-item-row">
-    <img v-if="item.product.images" :src="item.product.images[0]" alt="" class="thumb" />
+    <img v-if="item.product?.images?.length" :src="item.product.images[0]" alt="" class="thumb" />
     <div class="meta">
-      <div class="title">{{ item.product.title }}</div>
+      <div class="title">{{ item.product?.title ?? 'Producto' }}</div>
       <div class="qty">x{{ item.quantity }}</div>
     </div>
-    <div class="price">{{ formatPrice(item.product.price) }}</div>
-    <button class="remove" @click="$emit('remove', item.product.id)" aria-label="Eliminar">
+    <div class="price">{{ formatPrice(item.price ?? item.product?.price ?? 0) }}</div>
+    <button
+      class="remove"
+      @click="$emit('remove', item.productId ?? item.product?.id)"
+      aria-label="Eliminar"
+    >
       ×
     </button>
   </li>

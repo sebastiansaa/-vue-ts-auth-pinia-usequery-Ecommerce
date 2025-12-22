@@ -9,6 +9,9 @@ export interface ProductInterface {
   description: string;
   category: CategoryInterface;
   images: string[];
+  stock: number;
+  active: boolean;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

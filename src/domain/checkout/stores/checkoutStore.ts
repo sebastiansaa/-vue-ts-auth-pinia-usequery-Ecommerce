@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { performCardPayment, type PerformCardPaymentError } from '@/domain/checkout/helpers/performCardPayment'
 import { autoTokenizeCard } from '@/domain/checkout/helpers/cardTokenization'
 import type { CardFormRef } from '@/domain/checkout/interfaces/types'
 import { useErrorHandler } from '@/shared/composables/useErrorHandler'
-import type { Customer, PaymentMethod, CompleteCheckoutPayload } from '@/domain/checkout/interfaces/types'
+import type { Customer, PaymentMethod, PaymentResponse } from '@/domain/checkout/interfaces/types'
 import { logger } from '@/shared/services/logger'
 import { TokenizeReasons, CheckoutFailureReasons } from '@/domain/checkout/types/reasons'
 import type { Result } from '@/shared/types'
+import { initiatePayment, confirmPayment } from '@/domain/checkout/services/paymentService'
 
 //Orquesta el flujo de checkout para pagos
 
@@ -43,7 +43,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
 
   /* Ejecuta el pago completo con tokenización automática.
    * - Valida datos, Tokeniza , Crea y confirma el PaymentIntent - Devuelve payload completo o null   */
-  async function handlePayment(total: number, cardFormRef: CardFormRef): Promise<Result<CompleteCheckoutPayload>> {
+  async function handlePayment(total: number, cardFormRef: CardFormRef, items?: any[], currency = 'eur'): Promise<Result<PaymentResponse>> {
     if (!isCheckoutReady.value) return { ok: false, reason: CheckoutFailureReasons.NOT_READY }
 
     // Precondición explícita: si se intenta pagar con tarjeta, la ref debe
@@ -85,59 +85,35 @@ export const useCheckoutStore = defineStore('checkout', () => {
         currentPayment = _payment.value
       }
 
-      // Procesar pago con tarjeta
-      if (currentPayment.method === 'card') {
-        const activePayment = _payment.value as PaymentMethod
-        logger.info('[checkoutStore] calling performCardPayment', { total, customer: !!currentCustomer, paymentMethod: activePayment.method })
-        const res = await performCardPayment({
-          customer: currentCustomer,
-          payment: activePayment,
-          cardForm: cardFormRef,
-          total,
-        })
-        logger.info('[checkoutStore] performCardPayment result', { res })
+      const paymentMethodToken = currentPayment.method === 'card' ? currentPayment.details?.token : undefined
 
-        if (!res.success) {
-          _errorMessage.value = `Pago en estado: ${String(res.paymentIntent?.status ?? 'unknown')}`
-          return { ok: false, reason: CheckoutFailureReasons.PAYMENT_INCOMPLETE, details: res.paymentIntent?.status }
-        }
+      // Paso 1: iniciar pago (crea orden si falta en backend)
+      const initiated = await initiatePayment({
+        orderId: null,
+        amount: total,
+        currency,
+        paymentMethodToken,
+        items,
+      })
 
-        // Asegurarse de que el paymentIntent indica éxito real
-        const succeeded = res.paymentIntent?.status === 'succeeded'
-        if (!succeeded) {
-          _errorMessage.value = `Pago no completado: ${String(res.paymentIntent?.status ?? 'unknown')}`
-          return { ok: false, reason: CheckoutFailureReasons.PAYMENT_NOT_SUCCEEDED, details: res.paymentIntent?.status }
-        }
-
-        handleSuccess('Pago confirmado. Completando orden...')
-        _success.value = true
-
-        return {
-          ok: true, payload: {
-            customer: currentCustomer,
-            payment: activePayment,
-            paymentIntent: res.paymentIntent,
-          }
-        }
+      if (!initiated || initiated.status === 'FAILED') {
+        _errorMessage.value = 'No se pudo iniciar el pago'
+        return { ok: false, reason: CheckoutFailureReasons.PAYMENT_INCOMPLETE, details: initiated?.status }
       }
 
-      // Otros métodos aún no implementados: no marcar success hasta implementar
-      return {
-        ok: true, payload: {
-          customer: currentCustomer,
-          payment: _payment.value,
-        }
+      // Paso 2: confirmar pago en backend
+      const confirmed = await confirmPayment(initiated.paymentId, { paymentMethodToken })
+      if (!confirmed || confirmed.status !== 'PAID') {
+        _errorMessage.value = `Pago no completado: ${String(confirmed?.status ?? 'unknown')}`
+        return { ok: false, reason: CheckoutFailureReasons.PAYMENT_NOT_SUCCEEDED, details: confirmed?.status }
       }
+
+      handleSuccess('Pago confirmado. Completando orden...')
+      _success.value = true
+
+      return { ok: true, payload: confirmed }
     } catch (err: any) {
       logger.error('[checkoutStore] handlePayment error', { err })
-
-      // Manejo específico de errores de dominio
-      if ((err as PerformCardPaymentError)?.stage) {
-        const pErr = err as PerformCardPaymentError
-        _errorMessage.value = `Error (${pErr.stage}): ${pErr.message}`
-        _success.value = false
-        return { ok: false, reason: CheckoutFailureReasons.EXCEPTION, details: pErr }
-      }
 
       const info = handleError(err, 'CheckoutStore')
       // Enriquecer mensaje con contexto mínimo

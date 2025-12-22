@@ -3,8 +3,8 @@ import type { ProductInterface } from "../interfaces/ProductInterface";
 import type { CategoryInterface } from "../interfaces/CategoryInterface";
 
 // Types para creación/actualización (frontend -> backend)
-export type CreateProductDTO = Omit<ProductDTO, "id" | "createdAt" | "updatedAt">;
-export type UpdateProductDTO = Partial<CreateProductDTO>;
+export type CreateProductDTO = Omit<ProductDTO, "id" | "createdAt" | "updatedAt" | "deletedAt">;
+export type UpdateProductDTO = CreateProductDTO & { id: number };
 
 // Map CategoryDTO -> CategoryInterface
 export function mapCategoryDTO(d: CategoryDTO): CategoryInterface {
@@ -40,9 +40,12 @@ export function mapProductDTO(
     title: d.title,
     slug: d.slug,
     price: d.price,
-    description: d.description ?? "",
+    description: d.description,
     category,
     images: d.images ?? [],
+    stock: d.stock,
+    active: d.active,
+    deletedAt: d.deletedAt ?? null,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
   };
@@ -61,25 +64,42 @@ export function mapProductListDTO(
 
 // Map ProductInterface (dominio) -> CreateProductDTO (backend)
 export function mapProductToCreateDTO(p: ProductInterface): CreateProductDTO {
+  if (!p.category || typeof p.category.id !== "number") {
+    throw new Error("Missing required field: categoryId");
+  }
+  if (!p.images || p.images.length === 0) {
+    throw new Error("Missing required field: images (must include at least one image)");
+  }
+
   return {
     title: p.title,
     slug: p.slug,
     price: p.price,
     description: p.description ?? "",
-    stock: 0,
-    active: true,
-    images: p.images ?? [],
-    categoryId: p.category?.id ?? 0,
+    stock: p.stock ?? 0,
+    active: p.active ?? true,
+    images: p.images,
+    categoryId: p.category.id,
   };
 }
 
-export function mapProductToUpdateDTO(p: Partial<ProductInterface>): UpdateProductDTO {
-  const dto: UpdateProductDTO = {};
-  if (p.title !== undefined) dto.title = p.title;
-  if (p.slug !== undefined) dto.slug = p.slug;
-  if (p.price !== undefined) dto.price = p.price;
-  if (p.description !== undefined) dto.description = p.description;
-  if (p.images !== undefined) dto.images = p.images;
-  if (p.category?.id !== undefined) dto.categoryId = p.category.id;
-  return dto;
+export function mapProductToUpdateDTO(id: number, p: ProductInterface): UpdateProductDTO {
+  if (!p.category || typeof p.category.id !== "number") {
+    throw new Error("Missing required field: categoryId");
+  }
+  if (!p.images || p.images.length === 0) {
+    throw new Error("Missing required field: images (must include at least one image)");
+  }
+
+  return {
+    id,
+    title: p.title,
+    slug: p.slug,
+    price: p.price,
+    description: p.description ?? "",
+    stock: p.stock ?? 0,
+    active: p.active ?? true,
+    images: p.images,
+    categoryId: p.category.id,
+  };
 }

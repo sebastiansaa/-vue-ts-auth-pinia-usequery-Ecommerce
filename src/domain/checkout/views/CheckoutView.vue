@@ -4,7 +4,12 @@
       <CheckoutSummary :items="items" :total="total" @remove="handleRemove" />
 
       <div class="right-col">
-        <CheckoutSidebar :total="total" @confirm="handleConfirm" @cancel="handleCancel" />
+        <CheckoutSidebar
+          :total="total"
+          :items="items"
+          @confirm="handleConfirm"
+          @cancel="handleCancel"
+        />
       </div>
       <div class="error" v-if="error">{{ error?.message ?? String(error) }}</div>
     </section>
@@ -17,12 +22,11 @@ import { useRouter } from 'vue-router'
 import { cartStore } from '@/domain/cart/stores/cartStore'
 import CheckoutSummary from '../components/CheckoutSummary.vue'
 import CheckoutSidebar from '../components/CheckoutSidebar.vue'
-import { useCheckout } from '../composables/useCheckout'
 import { useCheckoutStore } from '../stores/checkoutStore'
 import { prefetchStripe } from '../helpers/stripe'
 import { STRIPE_PUBLISHABLE_KEY } from '@/shared/config'
 
-import type { CompleteCheckoutPayload } from '../interfaces/types'
+import { persistOrder, clearLocalCart } from '../helpers/persistence'
 
 const router = useRouter()
 const cart = cartStore()
@@ -31,7 +35,7 @@ const checkoutStore = useCheckoutStore()
 const items = computed(() => cart.cartItems)
 const total = computed(() => cart.totalPrice)
 
-const { performCheckout, error } = useCheckout()
+const error = checkoutStore.errorMessage
 
 // Resetear el estado del checkout al salir de la vista
 // Esto limpia customer, payment, errorMessage, etc. para el próximo checkout
@@ -52,8 +56,14 @@ function handleCancel() {
   router.back()
 }
 
-function handleConfirm(formData: CompleteCheckoutPayload) {
-  performCheckout(formData)
+function handleConfirm(result: any) {
+  if (!result?.ok) return
+  const orderId = result.payload?.orderId ?? 'unknown'
+  persistOrder(orderId, items.value, total.value)
+  clearLocalCart(cart)
+  setTimeout(() => {
+    router.push({ path: '/orders', query: { success: 'true' } })
+  }, 800)
 }
 </script>
 

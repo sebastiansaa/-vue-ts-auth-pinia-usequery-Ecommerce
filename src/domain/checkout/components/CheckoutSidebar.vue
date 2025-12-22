@@ -45,7 +45,7 @@ import PaymentMethods from './PaymentMethods.vue'
 import PaymentCardForm from './PaymentCardForm.vue'
 import { useCheckoutSidebar } from '../composables/useCheckoutSidebar'
 
-const props = defineProps<{ total?: number }>()
+const props = defineProps<{ total?: number; items?: any[] }>()
 const emit = defineEmits(['confirm', 'cancel'])
 
 import { ref, watch } from 'vue'
@@ -76,13 +76,13 @@ watch(
 )
 
 async function onPayClick() {
-  const result = await handlePay(props.total ?? 0)
+  const result = await handlePay(props.total ?? 0, props.items)
   if (result) emit('confirm', result)
 }
 
 async function onRetry() {
   // Reutiliza el mismo flujo de pago
-  const result = await handlePay(props.total ?? 0)
+  const result = await handlePay(props.total ?? 0, props.items)
   if (result) emit('confirm', result)
 }
 </script>

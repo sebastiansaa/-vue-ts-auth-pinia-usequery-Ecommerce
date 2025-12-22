@@ -12,6 +12,7 @@ export interface ProductDTO {
   categoryId: number;
   createdAt: string; // ISO
   updatedAt: string; // ISO
+  deletedAt?: string | null;
 }
 
 export interface CategoryDTO {

@@ -1,12 +1,10 @@
 // store para busqueda global de productos por título
 // con debounce y min de char para realizar la búsqueda
 
-import { useSearchStore } from "../stores/searchStore"
-import { useQuery } from "@tanstack/vue-query";
 import { computed, ref, unref, type Ref } from "vue";
 import { watchDebounced } from '@vueuse/core'
-import { getProducts } from "../../products/services/getProducts";
-import type { ProductInterface } from "../../products/interfaces";
+import { useSearchStore } from "../stores/searchStore"
+import { useProductsStore } from "../../products/stores/productsStore";
 import { SEARCH_CONFIG } from "../config/search.config";
 import { logger } from "../../../shared/services/logger";
 
@@ -17,71 +15,68 @@ export const useSearch = ({
   minChars = SEARCH_CONFIG.MIN_CHARS as number | Ref<number>
 } = {}) => {
 
-  const searchStore = useSearchStore() // Estado global
+  const searchStore = useSearchStore();
+  const productsStore = useProductsStore();
 
-  // debouncedTerm evita lanzar la query en cada pulsación
-  const debouncedTerm = ref(unref(searchStore.searchTerm))
+  // debouncedTerm evita lanzar filtros en cada pulsación
+  const debouncedTerm = ref(unref(searchStore.searchTerm));
 
   // Actualiza debouncedTerm con retardo usando watchDebounced de VueUse
   watchDebounced(
     () => searchStore.searchTerm,
     (val) => {
-      debouncedTerm.value = unref(val)
-      logger.debug(`[useSearch] Debounced term updated: ${debouncedTerm.value}`)
+      debouncedTerm.value = unref(val);
+      logger.debug(`[useSearch] Debounced term updated: ${debouncedTerm.value}`);
     },
     { debounce: debounceMs }
-  )
+  );
 
-  // Usa la misma queryKey que el prefetch en App.vue
-  const {
-    data: allProducts,
-    isLoading: queryLoading,
-    isError: queryIsError,
-    error: queryError,
-    refetch: queryRefetch,
-  } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => getProducts(),
-    staleTime: SEARCH_CONFIG.QUERY_STALE_TIME,
-  })
+  const normalizedTerm = computed(() => debouncedTerm.value?.trim() ?? '');
+  const enabled = computed(() => normalizedTerm.value.length >= unref(minChars));
 
-  // Filtra localmente sin hacer nuevas requests. CaseInsensitive
-  const results = computed(() => {
-    const term = debouncedTerm.value?.toLowerCase().trim()
-    // Si no hay término, o el término no llega al mínimo de caracteres, o no hay productos, devolver vacío
-    if (!term || term.length < unref(minChars) || !allProducts.value) {
-      return []
+  const filtered = computed(() => {
+    if (!enabled.value) return [];
+    const term = normalizedTerm.value.toLowerCase();
+    const list = productsStore.productsList;
+    if (!list.length) {
+      logger.debug('[useSearch] No products available in store to filter');
+      return [];
     }
-    const filtered = allProducts.value.filter((product: ProductInterface) =>
-      product.title.toLowerCase().includes(term)
-    )
-    logger.debug(`[useSearch] Filtered ${filtered.length} results for term: ${term}`)
-    return filtered
-  })
+    return list.filter((product) => {
+      const title = product.title?.toLowerCase() ?? '';
+      const description = product.description?.toLowerCase() ?? '';
+      const slug = product.slug?.toLowerCase() ?? '';
+      return (
+        title.includes(term) ||
+        description.includes(term) ||
+        slug.includes(term)
+      );
+    });
+  });
 
-  // isLoading defensivo: usa optional chaining y el parámetro minChars
-  // isLoading: combinar el estado de la query con el umbral de minChars
-  const isLoading = computed(() => (queryLoading.value ?? false) && (debouncedTerm.value?.length ?? 0) > unref(minChars))
+  const results = computed(() => filtered.value.slice(0, SEARCH_CONFIG.INITIAL_RESULTS_SHOWN));
+  const total = computed(() => filtered.value.length);
 
-  // Exponer estado de error y una función de reintento (refetch)
-  const isError = computed(() => !!queryIsError.value)
-  const error = queryError
+  const isLoading = computed(() => false);
+  const isError = computed(() => false);
+  const error = computed(() => null);
   const retry = () => {
-    logger.info('[useSearch] Retrying search query')
-    return queryRefetch()
-  }
+    logger.info('[useSearch] Retry called but search is local-only');
+    return filtered.value;
+  };
 
   const setSearchTerm = (term: string) => {
-    searchStore.setSearchTerm(term)
-  }
+    searchStore.setSearchTerm(term);
+  };
 
   const clearSearch = () => {
-    logger.debug('[useSearch] Clearing search')
-    searchStore.resetStore()
-  }
+    logger.debug('[useSearch] Clearing search');
+    searchStore.resetStore();
+  };
 
   return {
     results,
+    total,
     isLoading,
     isError,
     error,
@@ -89,5 +84,5 @@ export const useSearch = ({
     searchTerm: computed(() => searchStore.searchTerm),
     setSearchTerm,
     clearSearch
-  }
+  };
 }

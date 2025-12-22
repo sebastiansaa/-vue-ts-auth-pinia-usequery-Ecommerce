@@ -18,7 +18,7 @@ export function useCheckoutSidebar() {
   /**
    * Maneja el clic en el botón "Pagar ahora".
    */
-  async function handlePay(total: number) {
+  async function handlePay(total: number, items?: any[]) {
     // Validación defensiva simple
     if (payment.value?.method === 'card' && !cardFormRef.value) {
       console.error('Intento de pago con tarjeta sin referencia al formulario')
@@ -26,7 +26,7 @@ export function useCheckoutSidebar() {
     }
 
     // Pasamos la ref directamente. El store no necesita haberla guardado antes.
-    return await handlePayment(total, cardFormRef.value)
+    return await handlePayment(total, cardFormRef.value, items)
   }
 
   const canPay = computed(() => {

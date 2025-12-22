@@ -15,6 +15,9 @@ export const axiosAdapter: HttpClient = {
   post: async (url, data, config) => {
     return await instance.post(url, data, config);
   },
+  patch: async (url, data, config) => {
+    return await instance.patch(url, data, config);
+  },
   put: async (url, data, config) => {
     return await instance.put(url, data, config);
   },

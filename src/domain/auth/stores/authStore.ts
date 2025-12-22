@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { User } from '../interfaces/User'
-import { login as loginService, profile as profileService, refreshToken as refreshService } from '../services/authService'
+import { login as loginService, profile as profileService, refreshToken as refreshService, register as registerService, logout as logoutService } from '../services/authService'
 
 type Tokens = {
   accessToken: string
@@ -15,6 +15,7 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     isLogged: (state) => !!state.accessToken,
+    isAdmin: (state) => !!state.user?.roles?.includes('admin'),
   },
   actions: {
     setTokens(tokens: Tokens) {
@@ -43,11 +44,23 @@ export const useAuthStore = defineStore('auth', {
     async login(email: string, password: string) {
       const auth = await loginService(email, password)
       this.setTokens(auth.tokens)
-      this.user = auth.user ?? null
+      this.user = auth.user
+      return this.user
+    },
+
+    async register(email: string, password: string) {
+      const auth = await registerService(email, password)
+      this.setTokens(auth.tokens)
+      this.user = auth.user
       return this.user
     },
 
     async logout() {
+      try {
+        await logoutService()
+      } catch {
+        // Ignorar errores del endpoint de logout
+      }
       this.clearAuth()
     },
 
@@ -63,8 +76,11 @@ export const useAuthStore = defineStore('auth', {
           try {
             const user = await profileService()
             this.user = user
+            if (!user) {
+              this.clearAuth()
+            }
           } catch {
-            // si falla el profile, dejamos tokens y el componente puede llamar refresh o logout
+            this.clearAuth()
           }
         }
       } catch {

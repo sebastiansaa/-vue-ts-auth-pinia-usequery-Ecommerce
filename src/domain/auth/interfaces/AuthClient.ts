@@ -1,4 +1,5 @@
 import type { AuthResponse } from "./AuthResponse"
+import type { User } from "./User"
 
 export interface AuthClient {
   login(
@@ -6,9 +7,9 @@ export interface AuthClient {
     password: string): Promise<AuthResponse>
 
   register(
-    name: string,
     email: string,
-    password: string): Promise<AuthResponse>
+    password: string,
+  ): Promise<AuthResponse>
 
   loginWithGoogle(
     token: string

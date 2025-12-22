@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import AboutView from '@/views/AboutView.vue'
 import { authGuard } from '@/domain/auth/guards/authGuard'
+import { adminGuard } from '@/domain/admin/guards/adminGuard'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -48,6 +49,18 @@ const router = createRouter({
       name: 'orders',
       component: () => import('../domain/orders/views/OrdersListView.vue'),
       beforeEnter: authGuard,
+    },
+    {
+      path: '/admin',
+      component: () => import('@/domain/admin/views/AdminLayout.vue'),
+      beforeEnter: adminGuard,
+      children: [
+        {
+          path: '',
+          name: 'admin',
+          component: () => import('@/domain/admin/views/AdminDashboardView.vue'),
+        },
+      ],
     },
 
   ],
