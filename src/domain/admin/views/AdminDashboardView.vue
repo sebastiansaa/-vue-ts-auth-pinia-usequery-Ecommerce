@@ -17,7 +17,19 @@
       <p>Ajusta stock y revisa disponibilidad.</p>
     </div>
   </section>
+
+  <section class="admin-dashboard__panel">
+    <AdminCategoriesPanel />
+  </section>
+
+  <section class="admin-dashboard__panel">
+    <AdminInventoryPanel />
+  </section>
 </template>
+
+<script setup lang="ts">
+import { AdminCategoriesPanel, AdminInventoryPanel } from '../components'
+</script>
 
 <style scoped>
 .admin-dashboard {
@@ -39,5 +51,9 @@
 .admin-dashboard__card p {
   margin: 0;
   color: #475569;
+}
+
+.admin-dashboard__panel {
+  margin-top: 16px;
 }
 </style>

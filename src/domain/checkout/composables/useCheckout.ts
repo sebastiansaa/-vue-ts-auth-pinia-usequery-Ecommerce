@@ -2,7 +2,6 @@ import { useMutation } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { cartStore } from '@/domain/cart/stores/cartStore'
 import { completeCheckout } from '../services/paymentService'
-import { persistOrder, clearLocalCart } from '../helpers/persistence'
 import type { CompleteCheckoutResponse, CompleteCheckoutPayload } from '@/domain/checkout/interfaces/types'
 
 
@@ -19,9 +18,7 @@ export function useCheckout() {
 
     // 2. Los efectos secundarios van aquí
     onSuccess: (data) => {
-      // Ahora tenemos acceso a la respuesta (data) y sabemos que fue exitoso
-      persistOrder(data.orderId ?? 'unknown', cart.cartItems, cart.totalPrice)
-      clearLocalCart(cart)
+      void cart.clearCart()
 
       // UI Feedback / Redirección
       setTimeout(() => {

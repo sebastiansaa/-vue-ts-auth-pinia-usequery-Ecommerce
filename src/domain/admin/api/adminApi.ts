@@ -11,6 +11,10 @@ import type {
   ChangeUserStatusDto,
   UpdateProductDto,
   AdjustStockDto,
+  AdminCategoryDTO,
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  AdminInventoryMovementDTO,
 } from "../interfaces";
 
 
@@ -54,21 +58,11 @@ export const adminApi = {
     });
   },
 
-  // Orders
-  getOrders: (query?: AdminListQuery): Promise<AxiosResponse<AdminOrderDTO[]>> => {
-    const searchParams = new URLSearchParams();
-    if (query?.page !== undefined) searchParams.set("page", String(query.page));
-    if (query?.limit !== undefined) searchParams.set("limit", String(query.limit));
-    if (query?.sort) searchParams.set("sort", query.sort);
-    if (query?.filter) searchParams.set("filter", query.filter);
-    if (query?.q) searchParams.set("q", query.q);
-    const qs = searchParams.toString();
-    const url = qs ? `/admin/orders?${qs}` : `/admin/orders`;
-    return axiosAdapter.get(url);
-  },
+  // Orders (no admin-specific endpoints available; reuse user-scoped ones)
+  getOrders: (): Promise<AxiosResponse<AdminOrderDTO[]>> => axiosAdapter.get(`/admin/orders`),
   getOrderById: (id: string): Promise<AxiosResponse<AdminOrderDTO>> => axiosAdapter.get(`/admin/orders/${id}`),
   cancelOrder: (id: string): Promise<AxiosResponse<AdminOrderDTO>> => axiosAdapter.post(`/admin/orders/${id}/cancel`),
-  shipOrder: (id: string): Promise<AxiosResponse<AdminOrderDTO>> => axiosAdapter.post(`/admin/orders/${id}/ship`),
+  payOrder: (id: string): Promise<AxiosResponse<AdminOrderDTO>> => axiosAdapter.post(`/admin/orders/${id}/ship`),
   completeOrder: (id: string): Promise<AxiosResponse<AdminOrderDTO>> => axiosAdapter.post(`/admin/orders/${id}/complete`),
 
   // Payments
@@ -85,19 +79,25 @@ export const adminApi = {
   },
   getPaymentById: (id: string): Promise<AxiosResponse<AdminPaymentDTO>> => axiosAdapter.get(`/admin/payments/${id}`),
 
-  // Inventory
-  getInventory: (query?: AdminListQuery): Promise<AxiosResponse<AdminInventoryDTO[]>> => {
-    const searchParams = new URLSearchParams();
-    if (query?.page !== undefined) searchParams.set("page", String(query.page));
-    if (query?.limit !== undefined) searchParams.set("limit", String(query.limit));
-    if (query?.sort) searchParams.set("sort", query.sort);
-    if (query?.filter) searchParams.set("filter", query.filter);
-    if (query?.q) searchParams.set("q", query.q);
-    const qs = searchParams.toString();
-    const url = qs ? `/admin/inventory?${qs}` : `/admin/inventory`;
-    return axiosAdapter.get(url);
-  },
+  // Inventory (product-scoped)
   getInventoryByProductId: (productId: number): Promise<AxiosResponse<AdminInventoryDTO>> => axiosAdapter.get(`/admin/inventory/${productId}`),
-  adjustInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
-    axiosAdapter.patch(`/admin/inventory/${productId}/adjust`, body),
+  getInventoryMovements: (
+    productId: number,
+  ): Promise<AxiosResponse<AdminInventoryMovementDTO[]>> => axiosAdapter.get(`/admin/inventory/${productId}/movements`),
+  increaseInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
+    axiosAdapter.post(`/admin/inventory/${productId}/increase`, body),
+  decreaseInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
+    axiosAdapter.post(`/admin/inventory/${productId}/decrease`, body),
+  reserveInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
+    axiosAdapter.post(`/admin/inventory/${productId}/reserve`, body),
+  releaseInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
+    axiosAdapter.post(`/admin/inventory/${productId}/release`, body),
+
+  // Categories (protected mutations, public list/get)
+  getCategories: (): Promise<AxiosResponse<AdminCategoryDTO[]>> => axiosAdapter.get(`/admin/categories`),
+  getCategoryById: (id: number): Promise<AxiosResponse<AdminCategoryDTO>> => axiosAdapter.get(`/admin/categories/${id}`),
+  createCategory: (body: CreateCategoryDto): Promise<AxiosResponse<AdminCategoryDTO>> => axiosAdapter.post(`/admin/categories`, body),
+  updateCategory: (id: number, body: UpdateCategoryDto): Promise<AxiosResponse<AdminCategoryDTO>> =>
+    axiosAdapter.patch(`/admin/categories/${id}`, body),
+  deleteCategory: (id: number): Promise<AxiosResponse<void>> => axiosAdapter.delete(`/admin/categories/${id}`),
 };

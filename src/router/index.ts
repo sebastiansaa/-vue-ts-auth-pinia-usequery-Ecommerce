@@ -51,6 +51,12 @@ const router = createRouter({
       beforeEnter: authGuard,
     },
     {
+      path: '/account',
+      name: 'account',
+      component: () => import('@/domain/account/views/AccountLayout.vue'),
+      beforeEnter: authGuard,
+    },
+    {
       path: '/admin',
       component: () => import('@/domain/admin/views/AdminLayout.vue'),
       beforeEnter: adminGuard,

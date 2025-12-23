@@ -8,7 +8,7 @@ export interface AuthTokensRaw {
 }
 
 export interface AuthResponseRaw {
-  user: User;
+  user: Partial<User> & { id: string; email: string };
   tokens: AuthTokensRaw;
 }
 

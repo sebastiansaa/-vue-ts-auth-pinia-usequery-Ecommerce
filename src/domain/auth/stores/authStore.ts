@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { User } from '../interfaces/User'
-import { login as loginService, profile as profileService, refreshToken as refreshService, register as registerService, logout as logoutService } from '../services/authService'
+import { login as loginService, refreshToken as refreshService, register as registerService, logout as logoutService } from '../services/authService'
+import { getAccountProfile } from '@/domain/account/services'
 
 type Tokens = {
   accessToken: string
@@ -72,14 +73,8 @@ export const useAuthStore = defineStore('auth', {
         if (a && r) {
           this.accessToken = a
           this.refreshToken = r
-          // opcional: obtener perfil
-          try {
-            const user = await profileService()
-            this.user = user
-            if (!user) {
-              this.clearAuth()
-            }
-          } catch {
+          const refreshed = await this.refresh()
+          if (!refreshed) {
             this.clearAuth()
           }
         }
@@ -95,6 +90,16 @@ export const useAuthStore = defineStore('auth', {
         const auth = await refreshService(this.refreshToken)
         this.setTokens(auth.tokens)
         this.user = auth.user ?? this.user
+        try {
+          const profile = await getAccountProfile()
+          this.user = {
+            ...(this.user ?? profile),
+            ...profile,
+            roles: this.user?.roles ?? auth.user?.roles ?? [],
+          }
+        } catch {
+          // Si el perfil falla, mantenemos el usuario de refresh
+        }
         return true
       } catch {
         this.clearAuth()

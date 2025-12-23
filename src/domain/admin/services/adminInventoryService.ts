@@ -1,13 +1,7 @@
 import { adminApi } from "../api/adminApi";
 import { mapAdminInventory } from "./mappers";
-import type { AdminListQuery, AdjustStockDto } from "../interfaces";
+import type { AdjustStockDto, AdminInventoryMovementDTO } from "../interfaces";
 import { requireAdmin } from "../helpers/permissions";
-
-export const getAdminInventory = async (query?: AdminListQuery) => {
-    requireAdmin();
-    const response = await adminApi.getInventory(query);
-    return response.data.map(mapAdminInventory);
-};
 
 export const getAdminInventoryByProductId = async (productId: number) => {
     requireAdmin();
@@ -15,8 +9,33 @@ export const getAdminInventoryByProductId = async (productId: number) => {
     return mapAdminInventory(response.data);
 };
 
-export const adjustAdminInventory = async (productId: number, body: AdjustStockDto) => {
+export const getAdminInventoryMovements = async (productId: number): Promise<AdminInventoryMovementDTO[]> => {
     requireAdmin();
-    const response = await adminApi.adjustInventory(productId, body);
-    return mapAdminInventory(response.data);
+    const response = await adminApi.getInventoryMovements(productId);
+    return response.data;
 };
+
+const runStockMutation = async (
+    productId: number,
+    body: AdjustStockDto,
+    action: "increase" | "decrease" | "reserve" | "release",
+) => {
+    requireAdmin();
+    switch (action) {
+        case "increase":
+            return mapAdminInventory((await adminApi.increaseInventory(productId, body)).data);
+        case "decrease":
+            return mapAdminInventory((await adminApi.decreaseInventory(productId, body)).data);
+        case "reserve":
+            return mapAdminInventory((await adminApi.reserveInventory(productId, body)).data);
+        case "release":
+            return mapAdminInventory((await adminApi.releaseInventory(productId, body)).data);
+        default:
+            throw new Error("Invalid inventory action");
+    }
+};
+
+export const increaseAdminInventory = (productId: number, body: AdjustStockDto) => runStockMutation(productId, body, "increase");
+export const decreaseAdminInventory = (productId: number, body: AdjustStockDto) => runStockMutation(productId, body, "decrease");
+export const reserveAdminInventory = (productId: number, body: AdjustStockDto) => runStockMutation(productId, body, "reserve");
+export const releaseAdminInventory = (productId: number, body: AdjustStockDto) => runStockMutation(productId, body, "release");

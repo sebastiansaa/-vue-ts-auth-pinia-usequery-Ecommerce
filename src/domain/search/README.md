@@ -1,56 +1,26 @@
-# Search Domain
+# Search
 
-Este dominio gestiona la búsqueda global de productos por título, incluyendo lógica de debounce, filtrado local y navegación.
+## Propósito
+Gestionar la búsqueda global de productos con debounce, resultados y navegación contextual.
+
+## Responsabilidades
+- Capturar términos de búsqueda y mantener estado global.
+- Ejecutar búsquedas contra API/cache con debounce y mínimos de caracteres.
+- Mostrar resultados y permitir navegación a producto/resultado.
+- Manejar accesibilidad y cierre de dropdown.
 
 ## Estructura
+- components/: barra y dropdown de búsqueda (SearchBar, SearchInput, SearchDropdown).
+- composables/: `useSearch`, `useSearchBar` orquestan consultas y UI.
+- stores/: `searchStore` guarda término actual y helpers de estado.
+- config/: parámetros de debounce y mínimos.
 
-- **components/**: UI de la barra de búsqueda (`SearchBar`, `SearchInput`, `SearchDropdown`).
-- **composables/**: Casos de uso (`useSearch`, `useSearchBar`).
-- **config/**: Configuración (`search.config.ts`).
-- **stores/**: Estado global (`searchStore`).
+## Notas
+- Depende de catálogo de productos y utilidades compartidas (logger, helpers de UI). Usa debounce para evitar sobrecarga.
+- Endpoints consumidos: `GET /products/search?query={term}` (backend Products) y, opcionalmente, `GET /categories` para sugerencias de categoría. Documentar queryKey estable y debounce mínimo (p.ej. 300ms, minLength 2).
 
-## Uso
-
-El componente principal es `SearchBar`, que utiliza `useSearchBar` para coordinar input, resultados y navegación.
-
-### Store (`searchStore`)
-
-- `searchTerm`: término actual (readonly).
-- `setSearchTerm(term)`: actualiza el término.
-- `resetStore()`: limpia el estado.
-
-### Composables
-
-- **`useSearch`**: ejecuta la búsqueda de productos contra API/cache, con debounce y mínimo de caracteres.
-- **`useSearchBar`**: orquesta la interacción del usuario (input, dropdown, selección, navegación).
-
-## Dependencias
-
-- **products domain**: `getProducts`, `ProductInterface`.
-- **shared kernel**: utilidades (`logger`) y composables (`useClickOutside`, `useBufferedInput`, `useDropdownNavigation`).
-
-## Arquitectura
-
-- **Components**: Renderizan UI y capturan eventos.
-- **Composables**: Casos de uso que conectan UI con estado y servicios.
-- **Store**: Estado global reactivo, encapsulado y con acciones controladas.
-- **Config**: Centraliza parámetros (debounce, minChars, staleTime).
-
-## Principios
-
-- **Dependencias unidireccionales**: Components → Composables → Store/Servicios.
-- **Encapsulación**: El store no expone estado mutable.
-- **Reutilización**: Lógica compleja extraída en composables compartidos.
-- **Trazabilidad**: Logging en acciones y eventos clave.
-
-## Convenciones del Dominio
-
-### Performance
-
-- **Debounce**: Las búsquedas en tiempo real deben usar debounce (configurado en `config/`) para evitar sobrecarga.
-- **Caching**: Utilizar `staleTime` adecuado para evitar re-fetching innecesario de productos.
-
-### Interacción
-
-- **Accesibilidad**: Los dropdowns de búsqueda deben ser navegables por teclado.
-- **Feedback**: Mostrar estado de carga (`isLoading`) y mensajes de "sin resultados".
+## Resumen operativo
+- Propósito: búsqueda global de productos con debounce y resultados recortados.
+- Endpoints usados: `GET /products/search`, opcional `GET /categories`.
+- Roles requeridos: ninguno (público).
+- Estados posibles: idle, loading, error, resultados parciales (limite inicial), total obtenido.

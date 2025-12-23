@@ -1,4 +1,4 @@
-import type { Order } from '../interfaces/types'
+import type { OrderStatus } from '../interfaces/types'
 
 /**
  * Formatea una fecha para mostrarla en formato local
@@ -16,14 +16,15 @@ export function formatDate(date: string | Date): string {
 
 /**
  * Obtiene la etiqueta legible para el estado de un pedido.
- * @param status - Estado del pedido ('completed' | 'pending' | 'cancelled').
+ * @param status - Estado del pedido ('PENDING' | 'PAID' | 'CANCELLED' | 'COMPLETED').
    @returns Etiqueta legible correspondiente al estado.
  */
-export function getStatusLabel(status: Order['status']): string {
+export function getStatusLabel(status: OrderStatus): string {
   const labels: Record<string, string> = {
-    completed: 'Completada',
-    pending: 'Pendiente',
-    cancelled: 'Cancelada',
+    COMPLETED: 'Completada',
+    PENDING: 'Pendiente',
+    CANCELLED: 'Cancelada',
+    PAID: 'Pagada',
   }
   return labels[status] || String(status)
 }

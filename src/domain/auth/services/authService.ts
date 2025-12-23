@@ -10,10 +10,25 @@ function mapTokens(raw: AuthResponseRaw["tokens"]) {
   } satisfies AuthResponse["tokens"];
 }
 
+function mapUser(raw: AuthResponseRaw["user"]): User {
+  return {
+    id: raw.id,
+    email: raw.email,
+    name: raw.name ?? null,
+    phone: raw.phone ?? null,
+    roles: raw.roles ?? [],
+    status: raw.status ?? "ACTIVE",
+    preferences: raw.preferences ?? null,
+    addresses: raw.addresses ?? [],
+    createdAt: raw.createdAt ?? "",
+    updatedAt: raw.updatedAt ?? "",
+  } satisfies User;
+}
+
 function mapAuthResponse(raw: AuthResponseRaw): AuthResponse {
   return {
     tokens: mapTokens(raw.tokens),
-    user: raw.user,
+    user: mapUser(raw.user),
   };
 }
 
@@ -29,8 +44,9 @@ export async function register(email: string, password: string): Promise<AuthRes
 
 // Obtener el perfil del usuario autenticado
 export async function profile(): Promise<User | null> {
-  const response = await axiosAdapter.get<User | null>("/auth/me");
-  return response.data ?? null;
+  const response = await axiosAdapter.get<User | null>("/users/me");
+  if (!response.data) return null;
+  return mapUser(response.data);
 }
 
 // Refrescar tokens

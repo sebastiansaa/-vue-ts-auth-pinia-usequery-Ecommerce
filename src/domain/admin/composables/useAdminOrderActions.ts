@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
-import { cancelAdminOrder, shipAdminOrder, completeAdminOrder } from "../services";
+import { cancelAdminOrder, payAdminOrder, completeAdminOrder } from "../services";
 
-export type AdminOrderAction = "cancel" | "ship" | "complete";
+export type AdminOrderAction = "cancel" | "pay" | "complete";
 
 export const useAdminOrderActions = () => {
     const queryClient = useQueryClient();
@@ -11,8 +11,8 @@ export const useAdminOrderActions = () => {
             switch (action) {
                 case "cancel":
                     return await cancelAdminOrder(id);
-                case "ship":
-                    return await shipAdminOrder(id);
+                case "pay":
+                    return await payAdminOrder(id);
                 case "complete":
                     return await completeAdminOrder(id);
                 default:

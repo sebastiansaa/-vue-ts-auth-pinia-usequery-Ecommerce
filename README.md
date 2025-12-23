@@ -70,6 +70,12 @@ Todo el proyecto está desarrollado con TypeScript, incluyendo componentes, stor
 
 > Proyecto para práctica de arquitectura limpia, navegación y tipado estricto en Vue 3.
 
+## Resumen operativo (front)
+- Propósito: vitrina eCommerce con búsqueda, carrito, checkout y panel admin.
+- Endpoints usados: auth (`/auth/*`), productos (`/products`, `/products/search`), categorías (`/categories`, `/admin/categories`), carrito (`/cart`), órdenes (`/orders`), pagos (`/payments/*`), admin (`/admin/*`).
+- Roles requeridos: público para browse; usuario autenticado para carrito/checkout/órdenes; admin para `/admin/*` y low-stock.
+- Estados posibles: autenticado/no, carrito vacío/lleno, orden `pending|paid|completed|cancelled`, pago `pending|succeeded|failed`.
+
 ## Checkout y Pagos (Mock)
 
 Este proyecto incluye un **flujo completo de checkout con simulación (mock) de pagos**, preparado para migrar a Stripe cuando tengas un backend real.

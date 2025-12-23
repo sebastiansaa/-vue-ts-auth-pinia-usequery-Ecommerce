@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/vue-query'
 import { useTimeoutFn } from '@vueuse/core'
 import { computed } from 'vue'
 import { useOrdersStore } from '../stores/ordersStore'
-import { loadOrdersFromStorage } from '../helpers/ordersPersistence'
 import { logger } from '@/shared/services/logger'
 import type { Order } from '../interfaces/types'
+import { fetchOrders } from '../services'
 
 export function useOrders() {
   const store = useOrdersStore()
@@ -12,13 +12,13 @@ export function useOrders() {
   const query = useQuery<Order[], Error>({
     queryKey: ['orders'],
     queryFn: async () => {
-      logger.debug('[useOrders] Fetching orders from storage')
-      return loadOrdersFromStorage()
+      logger.debug('[useOrders] Fetching orders from backend')
+      return await fetchOrders()
     },
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    gcTime: 1000 * 60 * 10,   // 10 minutos (antes cacheTime)
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 5,
     retry: 1,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
   })
 
   // Timer único para ocultar el mensaje de éxito
@@ -31,16 +31,6 @@ export function useOrders() {
     if (!store.showSuccess) return
     logger.debug('[useOrders] Starting success message timer')
     startSuccessTimer()
-  }
-
-  /**
-   * Limpia el historial de pedidos tanto en el store/storage como en la caché de la query.
-   */
-  function clearHistory() {
-    logger.debug('[useOrders] Clearing order history')
-    store.clearOrders()
-    // Invalidamos la query para que refleje el estado vacío inmediatamente
-    void query.refetch()
   }
 
   const orders = computed(() => query.data.value ?? [])
@@ -58,7 +48,7 @@ export function useOrders() {
     // Actions
     refetch: query.refetch,
     watchSuccess,
-    clearHistory,
+    clearHistory: () => undefined,
   }
 }
 

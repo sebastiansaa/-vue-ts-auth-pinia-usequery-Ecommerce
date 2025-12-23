@@ -1,4 +1,4 @@
-export type AdminUserStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETED' | 'PENDING';
+export type AdminUserStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETED';
 
 export interface AdminUserDTO {
     id: string;

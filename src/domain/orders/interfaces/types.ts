@@ -1,19 +1,20 @@
+import type { OrderStatusDTO } from './backend'
+
+export type OrderStatus = OrderStatusDTO
+
 export interface OrderItem {
-    id: number | string
-    title: string
-    image?: string
+    productId: number
     quantity: number
     price: number
+    lineTotal: number
 }
-
-export type OrderStatus = 'completed' | 'pending' | 'cancelled'
 
 export interface Order {
     id: string
-    date: string | Date
+    userId: string
     status: OrderStatus
+    totalAmount: number
     items: OrderItem[]
-    total: number
+    createdAt: string
+    updatedAt: string
 }
-
-export default {} as const

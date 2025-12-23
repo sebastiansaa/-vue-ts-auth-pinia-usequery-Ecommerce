@@ -26,8 +26,6 @@ import { useCheckoutStore } from '../stores/checkoutStore'
 import { prefetchStripe } from '../helpers/stripe'
 import { STRIPE_PUBLISHABLE_KEY } from '@/shared/config'
 
-import { persistOrder, clearLocalCart } from '../helpers/persistence'
-
 const router = useRouter()
 const cart = cartStore()
 const checkoutStore = useCheckoutStore()
@@ -58,9 +56,7 @@ function handleCancel() {
 
 function handleConfirm(result: any) {
   if (!result?.ok) return
-  const orderId = result.payload?.orderId ?? 'unknown'
-  persistOrder(orderId, items.value, total.value)
-  clearLocalCart(cart)
+  void cart.clearCart()
   setTimeout(() => {
     router.push({ path: '/orders', query: { success: 'true' } })
   }, 800)

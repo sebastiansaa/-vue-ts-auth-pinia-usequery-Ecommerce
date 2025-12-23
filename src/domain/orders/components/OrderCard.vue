@@ -3,24 +3,23 @@
     <div class="order-header">
       <div class="order-info">
         <h3>Orden #{{ order.id }}</h3>
-        <span class="order-date">{{ formatDate(order.date) }}</span>
+        <span class="order-date">{{ formatDate(order.createdAt) }}</span>
       </div>
       <div class="order-status" :class="order.status">{{ getStatusLabel(order.status) }}</div>
     </div>
 
     <div class="order-items">
-      <div v-for="item in order.items" :key="item.id" class="order-item">
-        <img :src="item.image" :alt="item.title" class="item-image" />
+      <div v-for="item in order.items" :key="item.productId" class="order-item">
         <div class="item-details">
-          <p class="item-title">{{ item.title }}</p>
+          <p class="item-title">Producto #{{ item.productId }}</p>
           <p class="item-quantity">Cantidad: {{ item.quantity }}</p>
         </div>
-        <div class="item-price">{{ formatPrice(item.price * item.quantity) }}</div>
+        <div class="item-price">{{ formatPrice(item.lineTotal) }}</div>
       </div>
     </div>
 
     <div class="order-footer">
-      <div class="order-total"><strong>Total:</strong> {{ formatPrice(order.total) }}</div>
+      <div class="order-total"><strong>Total:</strong> {{ formatPrice(order.totalAmount) }}</div>
     </div>
   </div>
 </template>

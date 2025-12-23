@@ -3,9 +3,9 @@ import { mapAdminOrder } from "./mappers";
 import type { AdminListQuery, AdminOrderDTO } from "../interfaces";
 import { requireAdmin } from "../helpers/permissions";
 
-export const getAdminOrders = async (query?: AdminListQuery) => {
+export const getAdminOrders = async (_query?: AdminListQuery) => {
     requireAdmin();
-    const response = await adminApi.getOrders(query);
+    const response = await adminApi.getOrders();
     return response.data.map(mapAdminOrder);
 };
 
@@ -21,9 +21,9 @@ export const cancelAdminOrder = async (id: string) => {
     return mapAdminOrder(response.data as AdminOrderDTO);
 };
 
-export const shipAdminOrder = async (id: string) => {
+export const payAdminOrder = async (id: string) => {
     requireAdmin();
-    const response = await adminApi.shipOrder(id);
+    const response = await adminApi.payOrder(id);
     return mapAdminOrder(response.data as AdminOrderDTO);
 };
 

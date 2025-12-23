@@ -1,9 +1,8 @@
-// Interfaz de usuario autenticado (DTO expuesto por el backend auth/user)
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
+import type { UserProfile, UserStatus, UserAddress } from '@/domain/account/interfaces';
+
+// Interfaz de usuario autenticado (perfil + roles para guardas)
+export interface User extends UserProfile {
   roles: string[];
-  createdAt: string;
-  updatedAt: string;
 }
+
+export type { UserStatus, UserAddress };

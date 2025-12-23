@@ -4,9 +4,11 @@
 import { computed, ref, unref, type Ref } from "vue";
 import { watchDebounced } from '@vueuse/core'
 import { useSearchStore } from "../stores/searchStore"
-import { useProductsStore } from "../../products/stores/productsStore";
 import { SEARCH_CONFIG } from "../config/search.config";
 import { logger } from "../../../shared/services/logger";
+import { productsApi } from "@/domain/products/api/productsApi";
+import { mapProductListDTO } from "@/domain/products/services/mapperBackendShapeProduct";
+import type { ProductInterface } from "@/domain/products/interfaces";
 
 //"{ debounceMs }" => el retardo antes de lanzar búsqueda
 // minChars puede ser un number o un Ref<number> para permitir reactividad desde fuera
@@ -16,10 +18,15 @@ export const useSearch = ({
 } = {}) => {
 
   const searchStore = useSearchStore();
-  const productsStore = useProductsStore();
 
   // debouncedTerm evita lanzar filtros en cada pulsación
   const debouncedTerm = ref(unref(searchStore.searchTerm));
+
+  const isLoading = ref(false);
+  const isError = ref(false);
+  const error = ref<string | null>(null);
+  const resultsState = ref<ProductInterface[]>([]);
+  const totalState = ref(0);
 
   // Actualiza debouncedTerm con retardo usando watchDebounced de VueUse
   watchDebounced(
@@ -27,6 +34,7 @@ export const useSearch = ({
     (val) => {
       debouncedTerm.value = unref(val);
       logger.debug(`[useSearch] Debounced term updated: ${debouncedTerm.value}`);
+      triggerSearch();
     },
     { debounce: debounceMs }
   );
@@ -34,35 +42,44 @@ export const useSearch = ({
   const normalizedTerm = computed(() => debouncedTerm.value?.trim() ?? '');
   const enabled = computed(() => normalizedTerm.value.length >= unref(minChars));
 
-  const filtered = computed(() => {
-    if (!enabled.value) return [];
-    const term = normalizedTerm.value.toLowerCase();
-    const list = productsStore.productsList;
-    if (!list.length) {
-      logger.debug('[useSearch] No products available in store to filter');
-      return [];
-    }
-    return list.filter((product) => {
-      const title = product.title?.toLowerCase() ?? '';
-      const description = product.description?.toLowerCase() ?? '';
-      const slug = product.slug?.toLowerCase() ?? '';
-      return (
-        title.includes(term) ||
-        description.includes(term) ||
-        slug.includes(term)
-      );
-    });
-  });
+  const results = computed(() => resultsState.value.slice(0, SEARCH_CONFIG.INITIAL_RESULTS_SHOWN));
+  const total = computed(() => totalState.value);
 
-  const results = computed(() => filtered.value.slice(0, SEARCH_CONFIG.INITIAL_RESULTS_SHOWN));
-  const total = computed(() => filtered.value.length);
-
-  const isLoading = computed(() => false);
-  const isError = computed(() => false);
-  const error = computed(() => null);
   const retry = () => {
-    logger.info('[useSearch] Retry called but search is local-only');
-    return filtered.value;
+    logger.info('[useSearch] Retry called');
+    return triggerSearch();
+  };
+
+  const triggerSearch = async () => {
+    if (!enabled.value) {
+      resultsState.value = [];
+      totalState.value = 0;
+      isLoading.value = false;
+      isError.value = false;
+      error.value = null;
+      return [] as ProductInterface[];
+    }
+    try {
+      isLoading.value = true;
+      isError.value = false;
+      error.value = null;
+      const resp = await productsApi.search(normalizedTerm.value);
+      const { products, total } = mapProductListDTO(resp.data);
+      resultsState.value = products;
+      totalState.value = total;
+      logger.debug('[useSearch] Search results fetched', { total });
+      return products;
+    } catch (err: unknown) {
+      isError.value = true;
+      const message = err instanceof Error ? err.message : 'Error al buscar productos';
+      error.value = message;
+      resultsState.value = [];
+      totalState.value = 0;
+      logger.error('[useSearch] Search failed', { error: message });
+      return [] as ProductInterface[];
+    } finally {
+      isLoading.value = false;
+    }
   };
 
   const setSearchTerm = (term: string) => {
@@ -77,9 +94,9 @@ export const useSearch = ({
   return {
     results,
     total,
-    isLoading,
-    isError,
-    error,
+    isLoading: computed(() => isLoading.value),
+    isError: computed(() => isError.value),
+    error: computed(() => error.value),
     retry,
     searchTerm: computed(() => searchStore.searchTerm),
     setSearchTerm,

@@ -34,7 +34,7 @@ export async function initiatePayment(payload: InitiatePayload): Promise<Payment
 
   try {
     logger.info('[paymentService] initiatePayment', { ...payload, paymentMethodToken: !!payload.paymentMethodToken })
-    const resp = await serverAdapter.post('/api/payments/initiate', payload)
+    const resp = await serverAdapter.post('/payments/initiate', payload)
     const parsed = PaymentResponseSchema.safeParse(resp.data)
     if (!parsed.success) {
       logger.error('[paymentService] Invalid initiate response', { errors: parsed.error.format() })
@@ -64,7 +64,7 @@ export async function confirmPayment(paymentId: string, payload: ConfirmPayload)
 
   try {
     logger.info('[paymentService] confirmPayment', { paymentId, hasToken: !!payload.paymentMethodToken })
-    const resp = await serverAdapter.post(`/api/payments/${paymentId}/confirm`, payload)
+    const resp = await serverAdapter.post(`/payments/${paymentId}/confirm`, payload)
     const parsed = PaymentResponseSchema.safeParse(resp.data)
     if (!parsed.success) {
       logger.error('[paymentService] Invalid confirm response', { errors: parsed.error.format() })

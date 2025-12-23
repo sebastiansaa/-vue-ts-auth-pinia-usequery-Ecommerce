@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { logger } from '@/shared/services/logger'
-import { clearOrdersFromStorage } from '../helpers/ordersPersistence'
 
 export const useOrdersStore = defineStore('orders', () => {
   // Estado interno (privado)
@@ -16,11 +15,6 @@ export const useOrdersStore = defineStore('orders', () => {
     _showSuccess.value = value
   }
 
-  function clearOrders() {
-    logger.debug('[ordersStore] clearOrders')
-    clearOrdersFromStorage()
-  }
-
   function resetStore() {
     logger.debug('[ordersStore] resetStore')
     _showSuccess.value = false
@@ -29,7 +23,6 @@ export const useOrdersStore = defineStore('orders', () => {
   return {
     showSuccess,
     setShowSuccess,
-    clearOrders,
     resetStore,
   }
 })

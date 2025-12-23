@@ -7,6 +7,15 @@ export const isAdmin = (): boolean => {
     return !!auth.isAdmin;
 };
 
+/** Evalúa si un usuario (objeto) tiene rol admin sin depender del store. */
+export const isAdminUser = (user: { roles?: string[]; role?: string; isAdmin?: boolean } | null | undefined): boolean => {
+    if (!user) return false;
+    if (user.isAdmin) return true;
+    if (Array.isArray(user.roles) && user.roles.some((r) => r === "admin")) return true;
+    if (user.role === "admin") return true;
+    return false;
+};
+
 /** Lanza si no es admin y muestra feedback. */
 export const requireAdmin = (): void => {
     if (!isAdmin()) {

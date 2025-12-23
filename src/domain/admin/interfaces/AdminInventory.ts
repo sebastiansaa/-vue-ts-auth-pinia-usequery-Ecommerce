@@ -1,16 +1,25 @@
 export interface AdminInventoryDTO {
-    productId: number;
-    onHand: number;
-    reserved: number;
-    available: number;
-    updatedAt: string;
+  productId: number;
+  onHand: number;
+  reserved: number;
+  available: number;
 }
 
-export type AdjustStockType = 'INCREASE' | 'DECREASE' | 'SET';
+export type AdjustStockType = 'INCREASE' | 'DECREASE' | 'RESERVE' | 'RELEASE';
 
 export interface AdjustStockDto {
-    quantity: number;
-    type?: AdjustStockType;
-    reason?: string;
-    metadata?: Record<string, unknown>;
+  quantity: number;
+  reason: string;
+  type: AdjustStockType;
+}
+
+export interface AdminInventoryMovementDTO {
+  id: string;
+  productId: number;
+  type: AdjustStockType | 'RESERVATION' | 'RELEASE';
+  reason: string;
+  quantity: number;
+  onHandAfter: number;
+  reservedAfter: number;
+  createdAt: string;
 }

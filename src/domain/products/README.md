@@ -1,75 +1,27 @@
-# Products Domain
+# Products
 
-Este dominio maneja toda la lógica relacionada con la visualización y gestión de productos y categorías.
+## Propósito
+Proveer catálogo de productos y categorías para browsing y detalle de producto.
+
+## Responsabilidades
+- Obtener productos y categorías desde la API.
+- Mantener selección de producto/categoría y listas en store.
+- Exponer vistas de listado y detalle con componentes de tarjetas y grids.
+- Ofrecer utilidades de navegación y filtrado.
 
 ## Estructura
+- api/: endpoints HTTP directos.
+- services/: capa de servicios con mapeos y manejo de errores.
+- stores/: `useProductsStore` (estado de lista y selección).
+- composables/: `useProducts`, `useProductNavigation`, `useCategories`, etc.
+- components/: UI de tarjetas, grids y detalles.
+- config/, helpers/, interfaces/, views/: soporte de constantes, utilidades, tipos y páginas.
 
-- **api/**: Definición de endpoints y llamadas HTTP directas (axios).
-- **components/**: Componentes Vue específicos del dominio (Cards, Grids, Details).
-- **composables/**: Lógica de negocio reutilizable (Hooks).
-- **config/**: Configuración específica del dominio (Query Keys, UI constants).
-- **helpers/**: Funciones de utilidad puras.
-- **interfaces/**: Tipos TypeScript.
-- **services/**: Capa de abstracción sobre la API, incluye logging y manejo de errores.
-- **stores/**: Gestión del estado global (Pinia).
-- **views/**: Vistas principales (Páginas).
+## Notas
+- Depende de backend de productos/categorías; store expone métodos `resetStore`/`resetSelection` para navegación limpia.
 
-## Store: `useProductsStore`
-
-El store de productos sigue el patrón de **Strict Encapsulation**:
-
-- El estado (`_productsList`, `_selectedProductDTO`, `_selectedProductId`) es privado.
-- Se expone solo a través de `computed` (getters) y métodos (actions).
-- Incluye `resetStore()` para limpiar todo el estado y `resetSelection()` para limpiar solo el producto seleccionado.
-
-### Uso
-
-```typescript
-import { useProductsStore } from '../stores/productsStore'
-
-const store = useProductsStore()
-
-// Acciones
-store.selectProductById(123) // Selecciona un producto por ID
-store.resetSelection() // Limpia solo el producto seleccionado (útil al navegar)
-store.resetStore() // Limpia todo el estado
-
-// Getters
-console.log(store.productsList)
-console.log(store.selectedProductDTO)
-```
-
-## Composables
-
-### `useProductNavigation`
-
-Maneja la navegación entre productos y categorías, asegurando que el estado del store se actualice correctamente antes de cambiar de ruta.
-
-### `useCategories`
-
-Obtiene y filtra las categorías principales para la navegación.
-
-### `useProducts`
-
-Obtiene la lista de productos, opcionalmente filtrada por categoría.
-
-## Services
-
-Los servicios (`getProducts`, `getProductById`, `getCategories`) envuelven las llamadas a la API y añaden una capa de **Logging** estandarizado.
-
-## Convenciones del Dominio
-
-### Services
-
-- **Responsabilidad**: Contener la lógica de negocio y llamadas a API.
-- **Errores**: Normalizar errores y usar logging centralizado.
-- **Tipado**: Retornar tipos definidos (Interfaces/DTOs), nunca `any`.
-
-### Composables
-
-- **Naming**: Prefijo `use`.
-- **Reactividad**: Aceptar `Ref` o primitivos (usar `unref`). Retornar `Ref` o `ComputedRef`.
-
-### Helpers
-
-- **Propósito**: Funciones puras para formateo, truncado, etc.
+## Resumen operativo
+- Propósito: listar y detallar productos y categorías.
+- Endpoints usados: `GET /products`, `GET /products/:id`, `GET /products/search`, `GET /products/low-stock` (admin), `GET /categories`.
+- Roles requeridos: público para lectura; admin para low-stock y mutaciones.
+- Estados posibles: loading, error, lista vacía, producto activo/inactivo/eliminado.

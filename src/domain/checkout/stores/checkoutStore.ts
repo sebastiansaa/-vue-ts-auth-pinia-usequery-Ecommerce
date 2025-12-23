@@ -8,6 +8,7 @@ import { logger } from '@/shared/services/logger'
 import { TokenizeReasons, CheckoutFailureReasons } from '@/domain/checkout/types/reasons'
 import type { Result } from '@/shared/types'
 import { initiatePayment, confirmPayment } from '@/domain/checkout/services/paymentService'
+import { createOrderFromCart, safeMarkOrderPaid } from '@/domain/orders/services'
 
 //Orquesta el flujo de checkout para pagos
 
@@ -87,9 +88,13 @@ export const useCheckoutStore = defineStore('checkout', () => {
 
       const paymentMethodToken = currentPayment.method === 'card' ? currentPayment.details?.token : undefined
 
-      // Paso 1: iniciar pago (crea orden si falta en backend)
+      // Paso 0: crear orden en backend desde el carrito
+      const order = await createOrderFromCart()
+      const orderId = order.id
+
+      // Paso 1: iniciar pago vinculando la orden creada
       const initiated = await initiatePayment({
-        orderId: null,
+        orderId,
         amount: total,
         currency,
         paymentMethodToken,
@@ -108,10 +113,13 @@ export const useCheckoutStore = defineStore('checkout', () => {
         return { ok: false, reason: CheckoutFailureReasons.PAYMENT_NOT_SUCCEEDED, details: confirmed?.status }
       }
 
+      // Paso 3: marcar la orden como pagada
+      await safeMarkOrderPaid(orderId)
+
       handleSuccess('Pago confirmado. Completando orden...')
       _success.value = true
 
-      return { ok: true, payload: confirmed }
+      return { ok: true, payload: { ...confirmed, orderId } as PaymentResponse }
     } catch (err: any) {
       logger.error('[checkoutStore] handlePayment error', { err })
 
