@@ -1,31 +1,48 @@
-# Admin
+# Admin Domain
 
 ## Propósito
-Panel administrativo para gestionar catálogos y operaciones clave (categorías, inventario, órdenes) consumiendo endpoints protegidos.
 
-## Responsabilidades
-- Proteger rutas admin y verificar permisos antes de ejecutar acciones.
-- Consumir API admin para listar/editar categorías, inventario, órdenes y usuarios (prefijo `/admin/*`).
-- Exponer composables y servicios con Vue Query/axios para datos y mutaciones.
-- Renderizar paneles y formularios de administración reutilizables.
-- Invalidar caches y mostrar feedback en operaciones (toast, loading states).
+Panel de administración completo con CRUD de usuarios, productos, órdenes, pagos, inventario y categorías.
 
-## Estructura
-- api/: `adminApi` con endpoints protegidos.
-- services/: wrappers y mapeos (`adminOrdersService`, `adminInventoryService`, etc.).
-- composables/: hooks de datos/acciones (p.ej. `useAdminOrderActions`, `useAdminInventoryPanel`).
-- components/: paneles y formularios (categorías, inventario, badges, guard).
-- guards/ helpers/: validación de rol admin; permissions utilities.
-- stores/: estado de selección y UI admin.
-- views/: dashboard/layout admin.
+## Vistas / Rutas
 
-## Notas
-- Requiere sesión con rol admin; comparte axiosAdapter y guardas con el dominio auth.
-- Endpoints deben usar el prefijo `/admin`: usuarios (`/admin/users`, `/admin/users/:id/status`), productos (`/admin/products`), inventario (`/admin/inventory`, `/admin/inventory/:productId/adjust`), órdenes (`/admin/orders`, acciones `/admin/orders/:id/cancel|ship|complete`), pagos (`/admin/payments`), categorías (`/admin/categories`).
+| Ruta       | Params/Props | Propósito                                                                                |
+| ---------- | ------------ | ---------------------------------------------------------------------------------------- |
+| `/admin`   | -            | Dashboard con estadísticas generales                                                     |
+| `/admin/*` | -            | Rutas hijas para cada sección (users, products, orders, payments, inventory, categories) |
 
-## Resumen operativo
-- Propósito: gestionar recursos críticos (usuarios, productos, inventario, órdenes, pagos, categorías).
-- Endpoints usados: `/admin/users`, `/admin/products`, `/admin/orders`, `/admin/payments`, `/admin/inventory`, `/admin/categories`.
-- Roles requeridos: admin (JWT + RolesGuard).
-- Estados posibles: loading/error por recurso; entidades con estados propios (usuarios ACTIVE/SUSPENDED/DELETED; órdenes pending/paid/completed/cancelled; pagos pending/succeeded/failed).
-- Estados de usuario: `ACTIVE | SUSPENDED | DELETED`.
+## Guards / Políticas
+
+- **adminGuard**: Requiere usuario autenticado + rol `admin`. Verifica `authStore.isLogged` → `requireAdmin()`. Redirige a `/auth` si falla.
+
+## Estados Clave
+
+| Estado                 | Descripción         | Impacto Usuario/Módulos              |
+| ---------------------- | ------------------- | ------------------------------------ |
+| `activeTab: 'users'`   | Tab activo en panel | Renderiza componente correspondiente |
+| `isLoading: true`      | Cargando datos      | Muestra skeleton loader              |
+| `error: Error`         | Fallo en operación  | Muestra toast con mensaje            |
+| `isPending (mutation)` | Guardando cambios   | Deshabilita botones, muestra spinner |
+
+## Integración
+
+### Stores/Composables Exportados
+
+- **adminStore**: `setActiveTab()`, `selectEntity()`, `resetFilters()`, getters `activeTab`, `selectedEntity`, `filters`, `loading`
+- **21 composables Vue Query**: Queries y mutations especializadas por entidad (useAdminUsers, useAdminProducts, useAdminOrders, etc.)
+- **Helpers de autorización**: `isAdmin()`, `isAdminUser()`, `requireAdmin()` (exportados desde `helpers/permissions.ts`)
+
+### Eventos Globales
+
+- **No dispara eventos**: Operaciones síncronas
+- **Escucha cambios de auth**: `authStore.isAdmin` reactivo determina acceso
+
+### Variables de Entorno
+
+- **No lee envs**: Usa configuración global de Axios
+
+## Invariantes / Reglas UI
+
+- **Validación de rol en cada operación**: Composables admin verifican `isAdmin()` antes de ejecutar mutations (doble validación: frontend + backend)
+- **Invalidación automática de caché**: Mutations invalidan queries relacionadas → refetch automático (ej: crear producto invalida `['admin', 'products']`)
+- **Upload de imágenes con FormData**: `useAdminUploadProductImage()` crea FormData con `Content-Type: multipart/form-data` para subir archivos

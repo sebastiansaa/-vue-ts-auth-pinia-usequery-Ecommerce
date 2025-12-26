@@ -58,7 +58,7 @@ export const adminApi = {
     });
   },
 
-  // Orders (no admin-specific endpoints available; reuse user-scoped ones)
+  // Orders (no admin-specific endpoints disponibles ; reutilizamos los de usuario)
   getOrders: (): Promise<AxiosResponse<AdminOrderDTO[]>> => axiosAdapter.get(`/admin/orders`),
   getOrderById: (id: string): Promise<AxiosResponse<AdminOrderDTO>> => axiosAdapter.get(`/admin/orders/${id}`),
   cancelOrder: (id: string): Promise<AxiosResponse<AdminOrderDTO>> => axiosAdapter.post(`/admin/orders/${id}/cancel`),
@@ -79,25 +79,26 @@ export const adminApi = {
   },
   getPaymentById: (id: string): Promise<AxiosResponse<AdminPaymentDTO>> => axiosAdapter.get(`/admin/payments/${id}`),
 
-  // Inventory (product-scoped)
-  getInventoryByProductId: (productId: number): Promise<AxiosResponse<AdminInventoryDTO>> => axiosAdapter.get(`/admin/inventory/${productId}`),
+  // Backend como fuente de la verdad: InventoryController expone esas operaciones en /inventory/:productId
+  getInventoryByProductId: (productId: number): Promise<AxiosResponse<AdminInventoryDTO>> => axiosAdapter.get(`/inventory/${productId}`),
   getInventoryMovements: (
     productId: number,
-  ): Promise<AxiosResponse<AdminInventoryMovementDTO[]>> => axiosAdapter.get(`/admin/inventory/${productId}/movements`),
+  ): Promise<AxiosResponse<AdminInventoryMovementDTO[]>> => axiosAdapter.get(`/inventory/${productId}/movements`),
   increaseInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
-    axiosAdapter.post(`/admin/inventory/${productId}/increase`, body),
+    axiosAdapter.post(`/inventory/${productId}/increase`, body),
   decreaseInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
-    axiosAdapter.post(`/admin/inventory/${productId}/decrease`, body),
+    axiosAdapter.post(`/inventory/${productId}/decrease`, body),
   reserveInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
-    axiosAdapter.post(`/admin/inventory/${productId}/reserve`, body),
+    axiosAdapter.post(`/inventory/${productId}/reserve`, body),
   releaseInventory: (productId: number, body: AdjustStockDto): Promise<AxiosResponse<AdminInventoryDTO>> =>
-    axiosAdapter.post(`/admin/inventory/${productId}/release`, body),
+    axiosAdapter.post(`/inventory/${productId}/release`, body),
 
   // Categories (protected mutations, public list/get)
-  getCategories: (): Promise<AxiosResponse<AdminCategoryDTO[]>> => axiosAdapter.get(`/admin/categories`),
-  getCategoryById: (id: number): Promise<AxiosResponse<AdminCategoryDTO>> => axiosAdapter.get(`/admin/categories/${id}`),
-  createCategory: (body: CreateCategoryDto): Promise<AxiosResponse<AdminCategoryDTO>> => axiosAdapter.post(`/admin/categories`, body),
+  // Backend como fuente de la verdad: CategoriesController expone esas operaciones en /categories
+  getCategories: (): Promise<AxiosResponse<AdminCategoryDTO[]>> => axiosAdapter.get(`/categories`),
+  getCategoryById: (id: number): Promise<AxiosResponse<AdminCategoryDTO>> => axiosAdapter.get(`/categories/${id}`),
+  createCategory: (body: CreateCategoryDto): Promise<AxiosResponse<AdminCategoryDTO>> => axiosAdapter.post(`/categories`, body),
   updateCategory: (id: number, body: UpdateCategoryDto): Promise<AxiosResponse<AdminCategoryDTO>> =>
-    axiosAdapter.patch(`/admin/categories/${id}`, body),
-  deleteCategory: (id: number): Promise<AxiosResponse<void>> => axiosAdapter.delete(`/admin/categories/${id}`),
+    axiosAdapter.patch(`/categories/${id}`, body),
+  deleteCategory: (id: number): Promise<AxiosResponse<void>> => axiosAdapter.delete(`/categories/${id}`),
 };

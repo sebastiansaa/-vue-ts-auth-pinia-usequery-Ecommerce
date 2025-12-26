@@ -1,28 +1,47 @@
-# Account
+# Account Domain
 
 ## Propósito
-Gestionar el perfil del usuario autenticado (datos personales, preferencias y direcciones) consumiendo los endpoints `/users/me` del backend.
 
-## Responsabilidades
-- Obtener y mapear el perfil completo (`/users/me`) con direcciones, estado y preferencias.
-- Actualizar perfil (`PATCH /users/me`) y direcciones (`POST/PATCH/DELETE /users/me/addresses`).
-- Exponer servicios reutilizables para UI/composables sin duplicar lógica de mapeo.
-- Compartir tipos (`UserProfile`, `UserAddress`, `UserStatus`) con otros dominios como auth.
+Gestión de perfil del usuario autenticado (datos personales, preferencias, direcciones de envío).
 
-## Estructura
-- api/: llamadas HTTP con axiosAdapter (`accountApi`).
-- interfaces/: tipos de perfil/direcciones y payloads de update.
-- services/: funciones de dominio que normalizan/mapean respuestas.
-- composables/: hooks Vue Query (`useAccountProfile`, mutaciones de direcciones/perfil).
+## Vistas / Rutas
 
-## Lo que podría faltar
-- Configuraciones de cuenta: cambiar contraseña, preferencias de notificación, idioma.
-- Integración con Auth: refresco de sesión y estado (roles, status).
-- Estados de usuario: ACTIVE / SUSPENDED / DELETED → mostrar badges o restricciones en la UI.
-- Seguridad básica: cerrar sesión, gestionar tokens.
+| Ruta       | Params/Props | Propósito                                                                  |
+| ---------- | ------------ | -------------------------------------------------------------------------- |
+| `/account` | -            | Perfil completo con tabs (datos, direcciones, órdenes, wishlist, settings) |
 
-## Resumen operativo
-- Propósito: gestionar perfil y direcciones del usuario autenticado.
-- Endpoints usados: `GET/PATCH /users/me`, `POST/PATCH/DELETE /users/me/addresses`.
-- Roles requeridos: usuario autenticado.
-- Estados posibles: loading, error, perfil cargado; usuario con status ACTIVE/SUSPENDED/DELETED.
+## Guards / Políticas
+
+- **authGuard**: Requiere usuario autenticado. Redirige a `/auth` si no logueado.
+
+## Estados Clave
+
+| Estado                 | Descripción              | Impacto Usuario/Módulos               |
+| ---------------------- | ------------------------ | ------------------------------------- |
+| `isLoading: true`      | Primera carga de perfil  | Muestra skeleton loader               |
+| `data: UserProfile`    | Perfil cargado con éxito | Renderiza datos en componentes        |
+| `error: Error`         | Fallo al cargar perfil   | Muestra mensaje de error, botón retry |
+| `isPending (mutation)` | Guardando cambios        | Deshabilita botones, muestra spinner  |
+
+## Integración
+
+### Stores/Composables Exportados
+
+- **useAccountProfile**: Query Vue Query con `staleTime: 5min`, `gcTime: 10min`
+- **useAccountProfileMutations**: Mutations para update/add/delete con invalidación automática de caché
+- **No usa Pinia store**: Estado efímero manejado por Vue Query
+
+### Eventos Globales
+
+- **No dispara eventos**: Operaciones síncronas
+- **Escucha refresh de auth**: `authStore.refresh()` llama `getAccountProfile()` para sincronizar perfil tras renovar tokens
+
+### Variables de Entorno
+
+- **No lee envs**: Usa configuración global de Axios
+
+## Invariantes / Reglas UI
+
+- **Caché inteligente**: Datos frescos por 5min, no refetch innecesarios. Mutations invalidan caché → refetch automático.
+- **Direcciones con validación**: Formulario valida campos obligatorios (street, city, country, zipCode) antes de submit.
+- **Sincronización con Auth**: `authStore.refresh()` actualiza perfil completo para mantener datos consistentes entre módulos.

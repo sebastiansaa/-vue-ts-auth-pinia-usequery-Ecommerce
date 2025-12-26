@@ -1,31 +1,48 @@
-# Auth
+# Auth Domain
 
 ## Propósito
-Gestionar autenticación del usuario (login/registro) y proveer estado/guardas para el resto de dominios.
 
-## Responsabilidades
-- Autenticar usuarios contra API (login/register) y manejar tokens/session.
-- Exponer estado de usuario y helpers de autorización a otros dominios.
-- Proteger rutas con guardas (`authGuard`, `adminGuard`) y helper `requireAuth`.
-- Interceptar solicitudes HTTP para adjuntar credenciales y manejar expiración.
-- Sincronizar perfil desde `/users/me` (usando `roles` de auth + perfil/account para UI).
-- Validar y tipar payloads con esquemas.
+Autenticación de usuarios con JWT, refresh automático de tokens y control de acceso basado en roles.
 
-## Estructura
-- services/: llamadas a API de auth y manejo de tokens.
-- stores/: estado de sesión y usuario (Pinia).
-- guards/: `authGuard`, `adminGuard` para navegación.
-- interceptors/: configuración axios para auth headers y refresh.
-- composables/: helpers de UI/estado (login/register flows).
-- schemas/ interfaces/: validaciones y tipos de payloads.
-- views/ components/: pantallas y formularios de auth.
+## Vistas / Rutas
 
-## Notas
-- Requiere backend de auth JWT; guardas se usan por dominios como admin, orders y checkout.
-- El perfil enriquecido (direcciones, estado) se obtiene desde el dominio account usando `/users/me`.
+| Ruta    | Params/Props | Propósito                    |
+| ------- | ------------ | ---------------------------- |
+| `/auth` | -            | Login y registro de usuarios |
 
-## Resumen operativo
-- Propósito: autenticar usuarios y exponer identidad/roles.
-- Endpoints usados: `POST /auth/login`, `POST /auth/register`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`.
-- Roles requeridos: ninguno para login/registro; admin para rutas protegidas según RolesGuard.
-- Estados posibles: autenticado/no autenticado, token expirado/refresh, usuario con roles y status.
+## Guards / Políticas
+
+- **authGuard**: Protege rutas autenticadas (`/checkout`, `/orders`, `/account`). Redirige a `/auth` si no logueado.
+- **adminGuard**: Protege rutas admin (`/admin`). Verifica `isLogged` + `isAdmin`. Redirige a `/auth` si falla.
+
+## Estados Clave
+
+| Estado                | Descripción               | Impacto Usuario/Módulos                             |
+| --------------------- | ------------------------- | --------------------------------------------------- |
+| `isLogged: false`     | Sin access token válido   | Redirige a `/auth`, oculta opciones autenticadas    |
+| `isLogged: true`      | Access token vigente      | Acceso a rutas protegidas, muestra perfil en header |
+| `isAdmin: true`       | Usuario con rol `admin`   | Acceso a panel admin, opciones CRUD visibles        |
+| `refreshToken válido` | Refresh token no expirado | Renueva access token sin re-login                   |
+
+## Integración
+
+### Stores/Composables Exportados
+
+- **authStore**: `login()`, `register()`, `logout()`, `refresh()`, `loadFromStorage()`, getters `isLogged`, `isAdmin`, `user`
+- **useLoginForm**: Validación reactiva de formulario login (Vee-Validate + Zod)
+- **useRegisterForm**: Validación reactiva de formulario registro
+
+### Eventos Globales
+
+- **No dispara eventos**: Operaciones síncronas
+- **No escucha eventos**: Autónomo
+
+### Variables de Entorno
+
+- **No lee envs**: Tokens almacenados en localStorage
+
+## Invariantes / Reglas UI
+
+- **Refresh automático**: Interceptor Axios detecta 401 → ejecuta `refresh()` → reintenta request original (cola de reintentos)
+- **Logout limpia todo**: Revoca tokens en backend + limpia localStorage + resetea store (no redirige, responsabilidad del componente)
+- **Sincronización al inicio**: `main.ts` ejecuta `loadFromStorage()` → restaura tokens → intenta `refresh()` → si falla, limpia sesión

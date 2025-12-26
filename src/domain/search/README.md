@@ -1,26 +1,48 @@
-# Search
+# Search Domain
 
 ## Propósito
-Gestionar la búsqueda global de productos con debounce, resultados y navegación contextual.
 
-## Responsabilidades
-- Capturar términos de búsqueda y mantener estado global.
-- Ejecutar búsquedas contra API/cache con debounce y mínimos de caracteres.
-- Mostrar resultados y permitir navegación a producto/resultado.
-- Manejar accesibilidad y cierre de dropdown.
+Búsqueda global de productos con debounce, historial de búsquedas recientes y resultados en tiempo real.
 
-## Estructura
-- components/: barra y dropdown de búsqueda (SearchBar, SearchInput, SearchDropdown).
-- composables/: `useSearch`, `useSearchBar` orquestan consultas y UI.
-- stores/: `searchStore` guarda término actual y helpers de estado.
-- config/: parámetros de debounce y mínimos.
+## Vistas / Rutas
 
-## Notas
-- Depende de catálogo de productos y utilidades compartidas (logger, helpers de UI). Usa debounce para evitar sobrecarga.
-- Endpoints consumidos: `GET /products/search?query={term}` (backend Products) y, opcionalmente, `GET /categories` para sugerencias de categoría. Documentar queryKey estable y debounce mínimo (p.ej. 300ms, minLength 2).
+**No tiene rutas propias**. Componentes integrados en:
 
-## Resumen operativo
-- Propósito: búsqueda global de productos con debounce y resultados recortados.
-- Endpoints usados: `GET /products/search`, opcional `GET /categories`.
-- Roles requeridos: ninguno (público).
-- Estados posibles: idle, loading, error, resultados parciales (limite inicial), total obtenido.
+- Header global (SearchBar)
+- Dropdown de resultados (SearchResults)
+
+## Guards / Políticas
+
+- **Sin guards**: Búsqueda accesible sin autenticación
+
+## Estados Clave
+
+| Estado                     | Descripción              | Impacto Usuario/Módulos                     |
+| -------------------------- | ------------------------ | ------------------------------------------- |
+| `query: ''`                | Input vacío              | Muestra historial de búsquedas recientes    |
+| `loading: true`            | Buscando (tras debounce) | Muestra spinner en dropdown                 |
+| `results: []`              | Sin coincidencias        | Muestra "No se encontraron productos"       |
+| `recentSearches: string[]` | Historial (max 5)        | Muestra en dropdown, click ejecuta búsqueda |
+
+## Integración
+
+### Stores/Composables Exportados
+
+- **searchStore**: `search()`, `clearSearch()`, `addToHistory()`, `clearHistory()`, getters `query`, `results`, `recentSearches`, `loading`
+- **useSearch**: Expone store con helpers reactivos
+- **useSearchBar**: Gestiona input con debounce (300ms), validación y submit
+
+### Eventos Globales
+
+- **No dispara eventos**: Operaciones síncronas
+- **Delega a Products**: Usa `searchProducts()` del dominio Products (no tiene endpoints propios)
+
+### Variables de Entorno
+
+- **No lee envs**: Usa configuración global de Axios
+
+## Invariantes / Reglas UI
+
+- **Debounce de 300ms**: No ejecuta búsqueda hasta 300ms tras último keystroke (evita requests innecesarios)
+- **Historial en localStorage**: Búsquedas recientes persisten entre sesiones (max 5, FIFO)
+- **Sin caché de resultados**: Cada búsqueda ejecuta request fresco (no reutiliza resultados previos)

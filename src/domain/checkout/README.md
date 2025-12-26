@@ -1,28 +1,48 @@
-# Checkout
+# Checkout Domain
 
 ## Propósito
-Orquestar el flujo de pago: captura datos de cliente y método, tokeniza si aplica, y delega creación/confirmación de pago al backend.
 
-## Responsabilidades
-- Mantener estado de checkout (cliente, método, procesamiento, errores).
-- Tokenizar tarjeta y enviar payload seguro al backend.
-- Iniciar y confirmar pagos vía `/payments/initiate` y `/payments/:id/confirm` y redirigir tras éxito.
-- Coordinar UI de resumen y sidebar de pago.
-- Limpiar estado y carrito al finalizar.
+Proceso completo de checkout (datos de envío, método de pago, integración Stripe) con creación de órdenes.
 
-## Estructura
-- stores/: `checkoutStore` maneja flujo de pago y estados.
-- composables/: `useCheckoutForm`, `useCheckoutSidebar`, `usePaymentCard`, etc., para validar y orquestar UI.
-- services/: `paymentService` llama a `/api/payments/initiate|confirm`.
-- services/: `paymentService` llama a `/payments/initiate|confirm`.
-- components/: formularios y sidebar de checkout.
-- views/: `CheckoutView.vue` monta el flujo completo.
+## Vistas / Rutas
 
-## Notas
-- Requiere usuario autenticado (JWT) y depende de endpoints de pagos del backend; no se confirma intents en cliente.
+| Ruta        | Params/Props | Propósito                                                |
+| ----------- | ------------ | -------------------------------------------------------- |
+| `/checkout` | -            | Formulario multi-step (customer info → payment → review) |
 
-## Resumen operativo
-- Propósito: orquestar pago y confirmación de orden.
-- Endpoints usados: `POST /payments/initiate`, `POST /payments/:id/confirm`, opcional `POST /payments/:id/fail`.
-- Roles requeridos: usuario autenticado.
-- Estados posibles: idle, processing, paid/succeeded, failed, error de validación.
+## Guards / Políticas
+
+- **authGuard**: Requiere usuario autenticado. Redirige a `/auth` si no logueado.
+- **Validación de carrito**: Verifica `cartStore.count > 0` antes de permitir checkout. Redirige a `/cart` si vacío.
+
+## Estados Clave
+
+| Estado                    | Descripción                  | Impacto Usuario/Módulos                       |
+| ------------------------- | ---------------------------- | --------------------------------------------- |
+| `currentStep: 'customer'` | Formulario de datos de envío | Muestra campos name, email, address           |
+| `currentStep: 'payment'`  | Selección de método de pago  | Monta Stripe Elements si método = 'card'      |
+| `loading: true`           | Procesando pago              | Bloquea UI, muestra spinner                   |
+| `error: string`           | Pago fallido                 | Muestra toast con mensaje, permite reintentar |
+
+## Integración
+
+### Stores/Composables Exportados
+
+- **checkoutStore**: `setCustomer()`, `setPaymentMethod()`, `processCheckout()`, `reset()`, getters `customer`, `paymentMethod`, `loading`, `error`
+- **useCheckoutForm**: Vee-Validate + Zod para validación reactiva del formulario
+- **usePaymentCard**: Gestiona ciclo de vida de Stripe Elements (mount/unmount)
+
+### Eventos Globales
+
+- **No dispara eventos**: Operaciones síncronas
+- **Escucha cambios de carrito**: Lee `cartStore.cartItems` y `totalPrice` para crear orden
+
+### Variables de Entorno
+
+- `VITE_STRIPE_PUBLISHABLE_KEY`: Public key de Stripe para frontend (usado en `stripe.ts`)
+
+## Invariantes / Reglas UI
+
+- **Persistencia en sessionStorage**: Datos del formulario guardados para evitar pérdida en refresh (limpiados tras checkout exitoso)
+- **Stripe Elements condicional**: Solo monta si método = 'card', desmonta al cambiar método o salir de la vista
+- **Tokenización antes de confirmar**: `autoTokenizeCard()` ejecuta tokenización de Stripe → luego `confirmPayment()` con token (no envía datos de tarjeta al backend)
