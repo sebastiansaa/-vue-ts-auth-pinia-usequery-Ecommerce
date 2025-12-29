@@ -24,14 +24,14 @@
 
 <script setup lang="ts">
 import { useProductsStore } from '../../../stores'
-import { cartStore } from '@/domain/cart/stores/cartStore'
+import { CartStore } from '@/domain/cart/stores/cartStore'
 import { useMiniCartStore } from '@/domain/cart/stores/useMiniCartStore'
 import { usePaymentNavigation } from '@/domain/cart-summary/composables/usePaymentNavigation'
 import BaseProductButton from '@/shared/components/ui/actions/buttons/BaseProductButton.vue'
 
 const store = useProductsStore()
 const product = store.selectedProduct
-const cart = cartStore()
+const cart = CartStore()
 const { openMini } = useMiniCartStore()
 const { setProductId, goToCheckout } = usePaymentNavigation()
 
@@ -43,7 +43,7 @@ const handleAddToCart = () => {
 function handleBuyNow() {
   if (!product) return
 
-  const isAlreadyInCart = cart.cartItems.some((item) => item.product?.id === product.id)
+  const isAlreadyInCart = cart.cartItems.some((item) => item.productId === product.id) // <- usar productId
   if (!isAlreadyInCart) {
     cart.addToCart(product)
   }

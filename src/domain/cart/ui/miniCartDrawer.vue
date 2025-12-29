@@ -58,10 +58,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCartStore } from '../stores/cartStore'
+import { CartStore } from '../stores/cartStore'
 import { useMiniCartStore } from '../stores/useMiniCartStore'
 
-const cart = useCartStore()
+const cart = CartStore()
 const miniCart = useMiniCartStore()
 const router = useRouter()
 

@@ -12,8 +12,8 @@
 <script setup lang="ts">
 import GridComponent from '@/shared/components/layout/GridComponent.vue'
 import Productscard from './Productscard.vue'
-import { useProductNavigation } from '../../../app/hooks/useProductNavigation'
-import { useProducts } from '../../../app/hooks/useProducts'
+import { useProductNavigation } from '../../../app/hooks'
+import { useProducts } from '../../../app/hooks'
 import { computed } from 'vue'
 
 const { data: productsResponse } = useProducts()

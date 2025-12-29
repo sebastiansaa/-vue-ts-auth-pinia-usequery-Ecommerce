@@ -11,7 +11,7 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Productsgrid from '../components/Productsgrid.vue'
-import { useProducts } from '../../app/hooks/useProducts'
+import { useProducts } from '../../app/hooks'
 import { useNavStore } from '@/stores'
 import GridComponent from '@/shared/components/layout/GridComponent.vue'
 import { Skeleton } from '@/shared/components/layout'

@@ -3,11 +3,11 @@ import { axiosAdapter } from '../../../shared/api/axiosAdapter'
 
 import type {
   ProductResponse,
-  CreateProductDto,
+  CreateProductRequest as CreateProduct,
   ListProductResponse,
-  UpdateStockDto,
-  ListProductsQuery,
-  SearchProductsQuery,
+  UpdateStockRequest as UpdateStock,
+  ListProductsRequest as ListProductsQuery,
+  SearchProductsRequest as SearchProductsQuery,
 } from '../types/backendShape'
 
 export function createProductsClient(http?: HttpClient) {
@@ -15,7 +15,7 @@ export function createProductsClient(http?: HttpClient) {
 
   return {
     // 1. Crear o actualizar producto
-    async saveProduct(dto: CreateProductDto): Promise<ProductResponse> {
+    async saveProduct(dto: CreateProduct): Promise<ProductResponse> {
       const { data } = await client.post<ProductResponse>('/products', dto)
       return data
     },
@@ -43,7 +43,7 @@ export function createProductsClient(http?: HttpClient) {
       try {
         const { data } = await client.get<ProductResponse | null>(`/products/${id}`)
         return data
-      } catch (err: Error) {
+      } catch (err: Error | any) {
         // si el backend responde 404, devolver null; re-lanzar otros errores
         if (err?.response?.status === 404) return null
         throw err
@@ -51,7 +51,7 @@ export function createProductsClient(http?: HttpClient) {
     },
 
     // 6. Actualizar stock
-    async updateStock(id: number, dto: UpdateStockDto): Promise<ProductResponse> {
+    async updateStock(id: number, dto: UpdateStock): Promise<ProductResponse> {
       const { data } = await client.put<ProductResponse>(`/products/${id}/stock`, dto)
       return data
     },

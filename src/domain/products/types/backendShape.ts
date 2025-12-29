@@ -9,18 +9,36 @@ export interface ProductResponse {
   updatedAt?: string;
 }
 
-export interface CreateProductDto {
-  name: string;
-  description?: string;
-  price: number;
-  stock: number;
-  imageUrl?: string;
+export interface ListProductResponse {
+  products: ProductResponse[]
+  total: number
 }
 
-export type UpdateStockDto = { quantity: number };
+export type ListProductsRequest = {
+  page?: number
+  limit?: number
+  categoryId?: number
+}
 
-export interface ListProductResponse {
-  products: ProductResponse[];
-  total: number;
+export type SearchProductsRequest = {
+  query: string
+  page?: number
+  limit?: number
+}
+
+export type CreateProductRequest = {
+  id?: number
+  title: string
+  slug: string
+  price: number
+  description?: string
+  stock?: number
+  active?: boolean
+  images: string[]
+  categoryId: number
+}
+
+export type UpdateStockRequest = {
+  quantity: number
 }
 

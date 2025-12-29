@@ -1,24 +1,24 @@
-export interface CartItemDTO {
+export interface CartItemResponse {
   productId: number;
   quantity: number;
   price: number;
   lineTotal: number;
 }
 
-export interface CartDTO {
+export interface CartResponse {
   id: string;
   userId: string;
-  items: CartItemDTO[];
+  items: CartItemResponse[];
   total: number;
   createdAt: string;
   updatedAt: string;
 }
 
-import type { ProductResponse } from '@/domain/products/types'
+export interface AddItemRequest {
+  productId: number;
+  quantity: number;
+}
 
-export type CartItem = CartItemDTO & {
-  product?: ProductResponse;
-};
-
-
-
+export interface UpdateItemRequest {
+  quantity: number;
+}

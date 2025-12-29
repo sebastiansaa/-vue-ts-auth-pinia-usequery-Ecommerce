@@ -1,83 +1,95 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useGetCart, useAddItemToCart, useUpdateItemQuantity, useRemoveItem, useClearCart } from '../app/hooks'
-import type { CartDTO } from '../types/BackendShapeCart'
+import type { CartResponse, AddItemRequest, UpdateItemRequest } from '../types/BackendShapeCart'
 import type { ProductResponse } from '@/domain/products/types'
-import { FindProductByIdUsecase } from '@/domain/products/app/usecases'
 import type { CartItem } from '../types'
 
 // Gestiona el estado del carrito de compras de manera centralizada y reactiva
 
-export const useCartStore = defineStore('cart', () => {
-  // Estado
-  const cart = ref<CartDTO | null>(null)
+export const CartStore = defineStore('cart', () => {
+  const cart = ref<CartResponse | null>(null)
   const isLoading = ref(false)
-  const productCache = ref<Record<number, ProductResponse>>({})
 
-  // Getters
-  const totalItems = computed(() => cart.value?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0)
-  const totalPrice = computed(() => cart.value?.total ?? 0)
+  const totalItems = computed(() => (cart.value ? cart.value.items.reduce((s, i) => s + i.quantity, 0) : 0))
+  const totalPrice = computed(() => {
+    if (!cart.value) return 0
 
-  const cartItems = computed(() => {
-    return (cart.value?.items.map(item => ({
-      ...item,
-      product: productCache.value[item.productId] || undefined,
-    })) || []) as CartItem[]
+    return typeof cart.value.total === 'number'
+      ? cart.value.total
+      : cart.value.items.reduce((s, i) => s + i.lineTotal, 0)
   })
 
-  // Actions
-  const { data: cartData, refetch } = useGetCart()
+  // Devuelve los items tal cual vienen del backend (tipado como CartItem)
+  const cartItems = computed<CartItem[]>(() => (cart.value?.items ?? []).map(i => ({ ...i } as CartItem)))
 
-  const getCart = async () => {
+  const extract = (res: any) => res?.data ?? res
+
+  async function getCart() {
     isLoading.value = true
     try {
-      await refetch()
-      cart.value = cartData.value || null
-      if (cart.value) {
-        await hydrateProducts(cart.value.items.map(i => i.productId))
+      const { data, refetch } = useGetCart()
+      // usar cache si existe, sino forzar refetch
+      if (data?.value != null) {
+        cart.value = data.value ?? null
+      } else {
+        const res = await refetch()
+        cart.value = res.data ?? data?.value ?? null
       }
     } finally {
       isLoading.value = false
     }
   }
 
-  const hydrateProducts = async (ids: number[]) => {
-    const missing = ids.filter(id => !productCache.value[id])
-    await Promise.all(
-      missing.map(async (id) => {
-        try {
-          const product = await new FindProductByIdUsecase().execute(id)
-          if (product) productCache.value[id] = product
-        } catch (error) {
-          console.warn(`Unable to hydrate product ${id}`, error)
-        }
-      })
-    )
+  // Interno: ejecuta la mutación por productId y actualiza el state.
+  async function _addItemById(productId: number, quantity = 1) {
+    isLoading.value = true
+    try {
+      const dto: AddItemRequest = { productId, quantity }
+      const { mutateAsync } = useAddItemToCart()
+      const res = await mutateAsync(dto)
+      cart.value = extract(res) ?? cart.value
+      return extract(res) ?? cart.value    // <-- devolver resultado útil
+    } finally {
+      isLoading.value = false
+    }
   }
 
-  const { mutateAsync: addItemMutation } = useAddItemToCart()
-  const addItem = async (productId: number, quantity: number = 1) => {
-    await addItemMutation({ productId, quantity })
-    await getCart() // Refrescar
+  async function addToCart(product: ProductResponse, quantity = 1) {
+    return await _addItemById(product.id, quantity)
   }
 
-  const { mutateAsync: updateQuantityMutation } = useUpdateItemQuantity()
-  const updateQuantity = async (productId: number, quantity: number) => {
-    await updateQuantityMutation({ productId, quantity })
-    await getCart()
+  async function updateQuantity(productId: number, quantity: number) {
+    isLoading.value = true
+    try {
+      const { mutateAsync } = useUpdateItemQuantity()
+      const res = await mutateAsync({ productId, quantity })
+      cart.value = extract(res) ?? cart.value
+    } finally {
+      isLoading.value = false
+    }
   }
 
-  const { mutateAsync: removeItemMutation } = useRemoveItem()
-  const removeItem = async (productId: number) => {
-    await removeItemMutation(productId)
-    await getCart()
+  async function removeItem(productId: number) {
+    isLoading.value = true
+    try {
+      const { mutateAsync } = useRemoveItem()
+      const res = await mutateAsync(productId)
+      cart.value = extract(res) ?? cart.value
+    } finally {
+      isLoading.value = false
+    }
   }
 
-  const { mutateAsync: clearCartMutation } = useClearCart()
-  const clearCart = async () => {
-    await clearCartMutation()
-    cart.value = null
-    productCache.value = {}
+  async function clearCart() {
+    isLoading.value = true
+    try {
+      const { mutateAsync } = useClearCart()
+      const res = await mutateAsync()
+      cart.value = extract(res) ?? null
+    } finally {
+      isLoading.value = false
+    }
   }
 
   return {
@@ -87,7 +99,7 @@ export const useCartStore = defineStore('cart', () => {
     totalPrice,
     cartItems,
     getCart,
-    addItem,
+    addToCart,
     updateQuantity,
     removeItem,
     clearCart,
