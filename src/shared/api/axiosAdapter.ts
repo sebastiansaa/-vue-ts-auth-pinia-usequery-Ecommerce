@@ -3,7 +3,7 @@
 import axios from "axios";
 
 import { API_BASE_URL } from "@/shared/api/api"
-import type { HttpClient } from "./HttpClient";
+import type { HttpClient } from "./httpClient";
 
 
 const instance = axios.create({ baseURL: API_BASE_URL });

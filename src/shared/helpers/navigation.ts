@@ -1,4 +1,4 @@
-import type { CartItem } from '@/domain/cart/interface'
+import type { CartItem } from '@/domain/cart/types'
 import type { LocationQueryRaw } from 'vue-router'
 
 /**

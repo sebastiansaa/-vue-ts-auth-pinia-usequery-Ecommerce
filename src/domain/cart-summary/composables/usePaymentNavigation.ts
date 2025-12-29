@@ -1,5 +1,5 @@
 import { cartStore } from '@/domain/cart/stores/cartStore'
-import type { CartItem } from '@/domain/cart/interface'
+import type { CartItem } from '@/domain/cart/types'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toNumberSafe, buildCheckoutQuery, type CheckoutQuery } from '@/shared/helpers/navigation'

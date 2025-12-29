@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { logger } from '@/shared/services/logger'
-import type { MiniCartState } from '@/domain/cart/interface'
+import type { MiniCartState } from '@/domain/cart/types'
 
 /**
  * Store Pinia para controlar el estado del mini-cart drawer.

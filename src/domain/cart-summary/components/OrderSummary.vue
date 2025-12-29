@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 import { defineProps } from 'vue'
-import type { CartItem } from '@/domain/cart/interface'
+import type { CartItem } from '@/domain/cart/types'
 import CartItemRow from './CartItemRow.vue'
 import { formatPrice } from '@/shared/helpers/formatPrice'
 

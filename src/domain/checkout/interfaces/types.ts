@@ -2,7 +2,7 @@
 
 export type PaymentMethodId = 'card'
 
-import type { CartItem } from '@/domain/cart/interface'
+import type { CartItem } from '@/domain/cart/types'
 
 export interface CardTokenPayload {
   token: string

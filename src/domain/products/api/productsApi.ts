@@ -1,60 +1,84 @@
-//Obj productsApi que centraliza todas las op CRUD para productos usando Axios a través de axiosAdapter (personalizado).
+import type { HttpClient } from '../../../shared/api/httpClient'
+import { axiosAdapter } from '../../../shared/api/axiosAdapter'
 
-import { axiosAdapter } from "@/shared/api/axiosAdapter";
-import type { AxiosResponse } from "axios";
-import type { ProductDTO, ProductListDTO } from "../interfaces";
-import type { CreateProductDTO, UpdateProductDTO } from "../services/mapperBackendShapeProduct";
+import type {
+  ProductResponse,
+  CreateProductDto,
+  ListProductResponse,
+  UpdateStockDto,
+  ListProductsQuery,
+  SearchProductsQuery,
+} from '../types/backendShape'
 
-export const productsApi = {
+export function createProductsClient(http?: HttpClient) {
+  const client = http ?? axiosAdapter
 
-  // List products (backend only accepts page & limit)
-  getAll: (params?: { page?: number; limit?: number; categoryId?: number }): Promise<AxiosResponse<ProductListDTO>> => {
-    const searchParams = new URLSearchParams();
-    if (params?.page !== undefined) searchParams.set("page", String(params.page));
-    if (params?.limit !== undefined) searchParams.set("limit", String(params.limit));
-    if (params?.categoryId !== undefined) searchParams.set("categoryId", String(params.categoryId));
-    const qs = searchParams.toString();
-    const url = qs ? `/products?${qs}` : "/products";
-    return axiosAdapter.get(url);
-  },
+  return {
+    // 1. Crear o actualizar producto
+    async saveProduct(dto: CreateProductDto): Promise<ProductResponse> {
+      const { data } = await client.post<ProductResponse>('/products', dto)
+      return data
+    },
 
-  getById: (id: number): Promise<AxiosResponse<ProductDTO | null>> => {
-    return axiosAdapter.get(`/products/${id}`);
-  },
+    // 2. Listar productos con paginación
+    async listProducts(query?: ListProductsQuery): Promise<ListProductResponse> {
+      const { data } = await client.get<ListProductResponse>('/products', { params: query })
+      return data
+    },
 
-  // Search products (backend expects query param named "query")
-  search: (query: string, params?: { page?: number; limit?: number }): Promise<AxiosResponse<ProductListDTO>> => {
-    const searchParams = new URLSearchParams({ query });
-    if (params?.page !== undefined) searchParams.set("page", String(params.page));
-    if (params?.limit !== undefined) searchParams.set("limit", String(params.limit));
-    const qs = searchParams.toString();
-    return axiosAdapter.get(`/products/search?${qs}`);
-  },
+    // 3. Buscar productos por nombre
+    async searchProducts(query?: SearchProductsQuery): Promise<ListProductResponse> {
+      const { data } = await client.get<ListProductResponse>('/products/search', { params: query })
+      return data
+    },
 
-  // Save (create or update). Backend handles upsert via POST /products
-  save: (data: CreateProductDTO | UpdateProductDTO): Promise<AxiosResponse<ProductDTO>> => {
-    return axiosAdapter.post("/products", data);
-  },
+    // 4. Productos con bajo stock
+    async findLowStock(threshold = 5): Promise<ProductResponse[]> {
+      const { data } = await client.get<ProductResponse[]>('/products/low-stock', { params: { threshold } })
+      return data
+    },
 
-  updateStock: (id: number, body: { quantity: number }): Promise<AxiosResponse<ProductDTO>> => {
-    return axiosAdapter.put(`/products/${id}/stock`, body);
-  },
+    // 5. Buscar producto por ID
+    async findById(id: number): Promise<ProductResponse | null> {
+      try {
+        const { data } = await client.get<ProductResponse | null>(`/products/${id}`)
+        return data
+      } catch (err: Error) {
+        // si el backend responde 404, devolver null; re-lanzar otros errores
+        if (err?.response?.status === 404) return null
+        throw err
+      }
+    },
 
-  lowStock: (threshold?: number): Promise<AxiosResponse<ProductDTO[]>> => {
-    const searchParams = new URLSearchParams();
-    if (threshold !== undefined) searchParams.set("threshold", String(threshold));
-    const qs = searchParams.toString();
-    const url = qs ? `/products/low-stock?${qs}` : "/products/low-stock";
-    return axiosAdapter.get(url);
-  },
+    // 6. Actualizar stock
+    async updateStock(id: number, dto: UpdateStockDto): Promise<ProductResponse> {
+      const { data } = await client.put<ProductResponse>(`/products/${id}/stock`, dto)
+      return data
+    },
 
-  restore: (id: number): Promise<AxiosResponse<ProductDTO>> => {
-    return axiosAdapter.post(`/products/${id}/restore`);
-  },
+    // 7. Eliminar producto (soft por defecto, hard opcional)
+    async deleteProduct(id: number, hard = false): Promise<void> {
+      await client.delete<void>(`/products/${id}`, { params: { hard: hard ? 'true' : undefined } })
+    },
 
-  delete: (id: number, soft = true): Promise<AxiosResponse<void>> => {
-    const q = soft ? "" : "?hard=true";
-    return axiosAdapter.delete(`/products/${id}${q}`);
-  },
+    // 8. Restaurar producto eliminado
+    async restoreProduct(id: number): Promise<ProductResponse> {
+      const { data } = await client.post<ProductResponse>(`/products/${id}/restore`)
+      return data
+    },
 
-};
+    // 9. Subir imagen de producto
+    async uploadProductImage(
+      id: number,
+      formData: FormData
+    ): Promise<{ productId: number; filename: string; path: string }> {
+      const { data } = await client.post<{ productId: number; filename: string; path: string }>(
+        `/products/${id}/upload-image`,
+        formData
+      )
+      return data
+    },
+  }
+}
+
+export const productsClient = createProductsClient()

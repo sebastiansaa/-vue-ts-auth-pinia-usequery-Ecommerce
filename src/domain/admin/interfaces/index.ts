@@ -9,3 +9,11 @@ export interface UploadImageResponse {
   filename: string;
   path: string;
 }
+
+export interface DashboardStatsResponse {
+  totalUsers: number;
+  totalRevenue: number;
+  totalOrders: number;
+  pendingOrdersCount: number;
+  lowStockProductsCount: number;
+}

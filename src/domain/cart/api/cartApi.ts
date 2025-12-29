@@ -1,6 +1,6 @@
 import { axiosAdapter } from "@/shared/api/axiosAdapter";
 import type { AxiosResponse } from "axios";
-import type { CartDTO } from "../interface/BackendShapeCart";
+import type { CartDTO } from "../types/BackendShapeCart";
 
 export const cartApi = {
   get: (): Promise<AxiosResponse<CartDTO>> => axiosAdapter.get('/cart'),

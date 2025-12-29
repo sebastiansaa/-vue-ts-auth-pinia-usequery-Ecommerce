@@ -1,248 +1,95 @@
-import { defineStore } from "pinia";
-import { computed, ref } from "vue";
-import { logger } from "@/shared/services/logger";
-import { useAuthStore } from "@/domain/auth/stores/authStore";
-import type { ProductInterface } from "@/domain/products/interfaces";
-import { getProductById } from "@/domain/products/services";
-import {
-  addItemToCart,
-  clearCart as clearCartService,
-  getCart,
-  removeItemFromCart,
-  updateCartItemQuantity,
-  type Cart,
-} from "../services";
-import type { CartItem } from "@/domain/cart/interface";
-import {
-  clearCartStorage,
-  loadCartSnapshot,
-  saveCartSnapshot,
-} from "@/domain/cart/helpers/cartLocalAdapter";
-import { useToast } from "vue-toastification";
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { useGetCart, useAddItemToCart, useUpdateItemQuantity, useRemoveItem, useClearCart } from '../app/hooks'
+import type { CartDTO } from '../types/BackendShapeCart'
+import type { ProductResponse } from '@/domain/products/types'
+import { FindProductByIdUsecase } from '@/domain/products/app/usecases'
+import type { CartItem } from '../types'
 
-export const cartStore = defineStore("cartStore", () => {
-  const auth = useAuthStore();
+// Gestiona el estado del carrito de compras de manera centralizada y reactiva
 
-  const cart = ref<Cart | null>(loadCartSnapshot());
-  const productCache = ref<Record<number, ProductInterface>>({});
-  const loading = ref(false);
-  const toast = useToast();
+export const useCartStore = defineStore('cart', () => {
+  // Estado
+  const cart = ref<CartDTO | null>(null)
+  const isLoading = ref(false)
+  const productCache = ref<Record<number, ProductResponse>>({})
 
-  const isAuthenticated = computed(() => auth.isLogged);
+  // Getters
+  const totalItems = computed(() => cart.value?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0)
+  const totalPrice = computed(() => cart.value?.total ?? 0)
 
-  const cartItems = computed<CartItem[]>(() => hydrateCartItems(cart.value));
-  const totalPrice = computed(() => cart.value?.total ?? 0);
-  const count = computed(() =>
-    cart.value?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0
-  );
+  const cartItems = computed(() => {
+    return (cart.value?.items.map(item => ({
+      ...item,
+      product: productCache.value[item.productId] || undefined,
+    })) || []) as CartItem[]
+  })
 
-  function hydrateCartItems(current: Cart | null): CartItem[] {
-    if (!current) return [];
-    return current.items.map((item) => {
-      const product = productCache.value[item.productId];
-      const price = item.price ?? product?.price ?? 0;
-      return {
-        productId: item.productId,
-        product,
-        quantity: item.quantity,
-        price,
-        lineTotal: item.lineTotal ?? price * item.quantity,
-      } satisfies CartItem;
-    });
-  }
+  // Actions
+  const { data: cartData, refetch } = useGetCart()
 
-  function setCart(next: Cart | null) {
-    cart.value = next;
-    if (!next) {
-      clearCartStorage();
-      return;
+  const getCart = async () => {
+    isLoading.value = true
+    try {
+      await refetch()
+      cart.value = cartData.value || null
+      if (cart.value) {
+        await hydrateProducts(cart.value.items.map(i => i.productId))
+      }
+    } finally {
+      isLoading.value = false
     }
-    saveCartSnapshot(next);
-    void hydrateMissingProducts(next);
   }
 
-  async function hydrateMissingProducts(next: Cart): Promise<void> {
-    const missing = next.items
-      .map((it) => it.productId)
-      .filter((id) => !productCache.value[id]);
-
-    if (!missing.length) return;
-    await hydrateIndividually(missing);
-  }
-
-  async function hydrateIndividually(ids: number[]): Promise<void> {
+  const hydrateProducts = async (ids: number[]) => {
+    const missing = ids.filter(id => !productCache.value[id])
     await Promise.all(
-      ids.map(async (id) => {
+      missing.map(async (id) => {
         try {
-          const product = await getProductById(id);
-          if (product) productCache.value[id] = product;
+          const product = await new FindProductByIdUsecase().execute(id)
+          if (product) productCache.value[id] = product
         } catch (error) {
-          logger.warn(`[cartStore] Unable to hydrate product ${id}`, error as Error);
+          console.warn(`Unable to hydrate product ${id}`, error)
         }
       })
-    );
+    )
   }
 
-  async function safeGetRemoteCart(): Promise<Cart | null> {
-    try {
-      return await getCart();
-    } catch (error) {
-      logger.warn(`[cartStore] getCart failed`, error as Error);
-      return null;
-    }
+  const { mutateAsync: addItemMutation } = useAddItemToCart()
+  const addItem = async (productId: number, quantity: number = 1) => {
+    await addItemMutation({ productId, quantity })
+    await getCart() // Refrescar
   }
 
-  function ensureLocalCart(): Cart {
-    if (cart.value) return cart.value;
-    const now = new Date().toISOString();
-    const empty: Cart = { id: 'local-cart', userId: 'guest', items: [], total: 0, createdAt: now, updatedAt: now };
-    setCart(empty);
-    return empty;
+  const { mutateAsync: updateQuantityMutation } = useUpdateItemQuantity()
+  const updateQuantity = async (productId: number, quantity: number) => {
+    await updateQuantityMutation({ productId, quantity })
+    await getCart()
   }
 
-  function upsertLocalItem(product: ProductInterface, quantity: number): Cart {
-    const current = ensureLocalCart();
-    const items = [...current.items];
-    const idx = items.findIndex(i => i.productId === product.id);
-    const price = product.price;
-    const nextQty = Math.max(1, quantity);
-    if (idx === -1) {
-      items.push({ productId: product.id, quantity: nextQty, price, lineTotal: price * nextQty });
-    } else {
-      items[idx] = { productId: product.id, quantity: nextQty, price, lineTotal: price * nextQty };
-    }
-    const total = items.reduce((sum, i) => sum + i.lineTotal, 0);
-    const now = new Date().toISOString();
-    const next: Cart = { ...current, items, total, updatedAt: now };
-    setCart(next);
-    productCache.value[product.id] = product;
-    return next;
+  const { mutateAsync: removeItemMutation } = useRemoveItem()
+  const removeItem = async (productId: number) => {
+    await removeItemMutation(productId)
+    await getCart()
   }
 
-  function removeLocalItem(productId: number): void {
-    if (!cart.value) return;
-    const items = cart.value.items.filter(i => i.productId !== productId);
-    const total = items.reduce((sum, i) => sum + i.lineTotal, 0);
-    const now = new Date().toISOString();
-    setCart({ ...cart.value, items, total, updatedAt: now });
-  }
-
-  function updateLocalQuantity(productId: number, quantity: number): void {
-    if (!cart.value) return;
-    const normalized = Math.max(1, Math.trunc(quantity));
-    const items = cart.value.items.map(i => i.productId === productId ? { ...i, quantity: normalized, lineTotal: i.price * normalized } : i);
-    const total = items.reduce((sum, i) => sum + i.lineTotal, 0);
-    const now = new Date().toISOString();
-    setCart({ ...cart.value, items, total, updatedAt: now });
-  }
-
-  async function syncRemoteWithLocalSnapshot(): Promise<void> {
-    if (!isAuthenticated.value) return;
-    const localSnapshot = cart.value;
-    let remote = await safeGetRemoteCart();
-
-    if (localSnapshot && localSnapshot.items.length) {
-      for (const item of localSnapshot.items) {
-        try {
-          await addItemToCart(item.productId, item.quantity);
-        } catch (error) {
-          logger.warn(`[cartStore] sync add item failed`, error as Error);
-        }
-      }
-      remote = await safeGetRemoteCart();
-    }
-
-    if (remote) {
-      setCart(remote);
-    }
-  }
-
-  async function addToCart(product: ProductInterface, quantity = 1): Promise<void> {
-    loading.value = true;
-    try {
-      if (!isAuthenticated.value) {
-        if (product.stock !== undefined && quantity > product.stock) {
-          toast.error('Sin stock suficiente');
-          return;
-        }
-        upsertLocalItem(product, quantity);
-        return;
-      }
-      const updated = await addItemToCart(product.id, quantity);
-      if (product) productCache.value[product.id] = product;
-      if (updated) setCart(updated);
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function removeFromCart(productId: number): Promise<void> {
-    loading.value = true;
-    try {
-      if (!isAuthenticated.value) {
-        removeLocalItem(productId);
-        return;
-      }
-      const updated = await removeItemFromCart(productId);
-      if (updated) setCart(updated);
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function updateQuantity(productId: number, quantity: number): Promise<void> {
-    const normalized = Math.max(0, Math.trunc(quantity));
-    if (normalized === 0) {
-      await removeFromCart(productId);
-      return;
-    }
-    loading.value = true;
-    try {
-      if (!isAuthenticated.value) {
-        updateLocalQuantity(productId, normalized);
-        return;
-      }
-      const updated = await updateCartItemQuantity(productId, normalized);
-      if (updated) setCart(updated);
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function clearCart(): Promise<void> {
-    loading.value = true;
-    try {
-      if (!isAuthenticated.value) {
-        setCart({ id: 'local-cart', userId: 'guest', items: [], total: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-        return;
-      }
-      await clearCartService();
-      setCart({ id: cart.value?.id ?? 'remote-cart', userId: auth.user?.id ?? 'user', items: [], total: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function syncCart(): Promise<void> {
-    if (!isAuthenticated.value) return;
-    await syncRemoteWithLocalSnapshot();
-  }
-
-  // Hydrate products for initial snapshot (if any)
-  if (cart.value) {
-    void hydrateMissingProducts(cart.value);
+  const { mutateAsync: clearCartMutation } = useClearCart()
+  const clearCart = async () => {
+    await clearCartMutation()
+    cart.value = null
+    productCache.value = {}
   }
 
   return {
-    cartItems,
+    cart,
+    isLoading,
+    totalItems,
     totalPrice,
-    count,
-    loading,
-    addToCart,
-    removeFromCart,
+    cartItems,
+    getCart,
+    addItem,
     updateQuantity,
+    removeItem,
     clearCart,
-    syncCart,
-    isAuthenticated,
-  };
-});
+  }
+})

@@ -50,7 +50,7 @@ import { ref, computed } from 'vue'
 import { ShoppingCartIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
 import { LogoButton } from '@/shared/components/ui/actions/buttons'
 import { useNavigation } from '@/shared/composables/useNavigation'
-import { cartStore } from '@/domain/cart/stores/cartStore'
+import { useCartStore } from '@/domain/cart/stores/cartStore'
 import { useMiniCartStore } from '@/domain/cart/stores/useMiniCartStore'
 import { useRouter } from 'vue-router'
 
@@ -62,7 +62,7 @@ const menuOpen = ref(false)
 const { handleSection } = useNavigation()
 const router = useRouter()
 
-const cart = cartStore()
+const cart = useCartStore()
 const count = computed(() => cart.count)
 const { openExpanded } = useMiniCartStore()
 

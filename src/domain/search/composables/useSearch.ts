@@ -7,8 +7,8 @@ import { useSearchStore } from "../stores/searchStore"
 import { SEARCH_CONFIG } from "../config/search.config";
 import { logger } from "../../../shared/services/logger";
 import { productsApi } from "@/domain/products/api/productsApi";
-import { mapProductListDTO } from "@/domain/products/services/mapperBackendShapeProduct";
-import type { ProductInterface } from "@/domain/products/interfaces";
+import { mapProductListDTO } from "@/domain/products/app/usecases/mapperBackendShapeProduct";
+import type { ProductInterface } from "@/domain/products/types";
 
 //"{ debounceMs }" => el retardo antes de lanzar búsqueda
 // minChars puede ser un number o un Ref<number> para permitir reactividad desde fuera

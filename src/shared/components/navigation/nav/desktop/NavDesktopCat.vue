@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { BaseAccountButton } from '@/shared/components/ui/actions/buttons'
 import { useNavigation } from '@/shared/composables/useNavigation'
-import { useCategories } from '@/domain/products/composables/useCategories'
+import { useCategories } from '@/domain/products/app/hooks/useCategories'
 import { getCategoryLabel } from '@/shared/helpers'
 
 const { categories } = useCategories()

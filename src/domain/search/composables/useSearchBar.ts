@@ -3,8 +3,8 @@
 
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useSearch } from './useSearch'
-import { useProductNavigation } from '../../products/composables'
-import type { ProductInterface } from '../../products/interfaces'
+import { useProductNavigation } from '../../products/app/hooks'
+import type { ProductInterface } from '../../products/types'
 import {
   useClickOutside,
   useBufferedInput,
