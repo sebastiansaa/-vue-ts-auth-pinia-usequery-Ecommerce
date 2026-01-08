@@ -4,8 +4,8 @@
       <img
         class="product-image"
         @error="handleImageError"
-        :src="product?.imageUrl"
-        alt="imagen del producto"
+        :src="coverImage"
+        :alt="product?.title ?? 'producto'"
       />
       <h3>{{ truncatedTitle }}</h3>
     </div>
@@ -13,12 +13,12 @@
 </template>
 
 <script setup lang="ts">
-import { handleImageError, truncate } from '../../../app/helpers'
 import { computed } from 'vue'
+import { handleImageError, truncate, getPrimaryProductImage } from '../../../app/helpers'
 import { useProduct } from '../../../app/hooks'
 
 const props = defineProps<{ productId: number }>()
-const { data: product, isLoading } = useProduct(props.productId)
+const { data: product } = useProduct(props.productId)
 
 const emit = defineEmits(['select'])
 
@@ -27,7 +27,8 @@ function handleClick() {
 }
 
 const MAX_TITLE_LENGTH = 20
-const truncatedTitle = computed(() => truncate(product.value?.name ?? '', MAX_TITLE_LENGTH))
+const truncatedTitle = computed(() => truncate(product.value?.title ?? '', MAX_TITLE_LENGTH))
+const coverImage = computed(() => getPrimaryProductImage(product.value?.images))
 </script>
 
 <style scoped>

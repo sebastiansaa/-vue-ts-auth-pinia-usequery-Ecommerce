@@ -1,11 +1,11 @@
 <template>
   <div class="product-description-mobile">
-    <h2 class="product-title">{{ product?.name ?? '' }}</h2>
+    <h2 class="product-title">{{ product?.title ?? '' }}</h2>
     <p class="product-price">
       <strong>{{ product?.price ?? '' }} USD</strong>
     </p>
     <p class="product-description">
-      {{ product?.description || 'noDescription' }}
+      {{ product?.description || 'Sin descripción disponible' }}
     </p>
   </div>
   <div class="actions-section">

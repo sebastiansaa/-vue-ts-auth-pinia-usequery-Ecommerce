@@ -1,6 +1,6 @@
 <template>
   <div class="product-card-related" @click="handleClick">
-    <img class="card-image" :src="product.imageUrl" :alt="product.name" />
+    <img class="card-image" :src="primaryImage" :alt="product.title" />
     <h4 class="card-title">{{ truncatedTitle }}</h4>
     <p class="card-price">${{ product.price }}</p>
   </div>
@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ProductResponse } from '../../../types/backendShape'
+import { getPrimaryProductImage } from '../../../app/helpers'
 
 const props = defineProps<{ product: ProductResponse }>()
 const emit = defineEmits(['select'])
@@ -19,10 +20,12 @@ const handleClick = () => {
 
 const truncatedTitle = computed(() => {
   const maxLength = 30
-  return props.product.name.length > maxLength
-    ? props.product.name.substring(0, maxLength) + '...'
-    : props.product.name
+  return props.product.title.length > maxLength
+    ? props.product.title.substring(0, maxLength) + '...'
+    : props.product.title
 })
+
+const primaryImage = computed(() => getPrimaryProductImage(props.product.images))
 </script>
 
 <style scoped>

@@ -3,11 +3,11 @@ import { axiosAdapter } from '../../../shared/api/axiosAdapter'
 
 import type {
   ProductResponse,
-  CreateProductRequest as CreateProduct,
   ListProductResponse,
-  UpdateStockRequest as UpdateStock,
-  ListProductsRequest as ListProductsQuery,
-  SearchProductsRequest as SearchProductsQuery,
+  SaveProductRequest,
+  UpdateStockRequest,
+  ListProductsQuery,
+  SearchProductsQuery,
 } from '../types/backendShape'
 
 export function createProductsClient(http?: HttpClient) {
@@ -15,7 +15,7 @@ export function createProductsClient(http?: HttpClient) {
 
   return {
     // 1. Crear o actualizar producto
-    async saveProduct(dto: CreateProduct): Promise<ProductResponse> {
+    async saveProduct(dto: SaveProductRequest): Promise<ProductResponse> {
       const { data } = await client.post<ProductResponse>('/products', dto)
       return data
     },
@@ -34,7 +34,7 @@ export function createProductsClient(http?: HttpClient) {
 
     // 4. Productos con bajo stock
     async findLowStock(threshold = 5): Promise<ProductResponse[]> {
-      const { data } = await client.get<ProductResponse[]>('/products/low-stock', { params: { threshold } })
+      const { data } = await client.get<ProductResponse[]>('/products/admin/low-stock', { params: { threshold } })
       return data
     },
 
@@ -51,7 +51,7 @@ export function createProductsClient(http?: HttpClient) {
     },
 
     // 6. Actualizar stock
-    async updateStock(id: number, dto: UpdateStock): Promise<ProductResponse> {
+    async updateStock(id: number, dto: UpdateStockRequest): Promise<ProductResponse> {
       const { data } = await client.put<ProductResponse>(`/products/${id}/stock`, dto)
       return data
     },

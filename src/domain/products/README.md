@@ -22,4 +22,9 @@ Módulo para catálogo de productos: búsqueda, detalles, CRUD admin. Usa Clean 
 - Rutas: Públicas; admin con guards.
 - Estados: Loading, vacío, selección.
 
+### Backend NestJS
+- Los DTOs consumidos se alinean con `ProductDTO` y `ProductListDTO` definidos en `src/client/interfacesBackend.ts`.
+- El cliente HTTP desanida la respuesta `{ statusCode, message, data }` del backend y expone directamente el payload.
+- Helpers (`productImages.ts`) resuelven imágenes (`images[]`) y placeholders para mantener la UI coherente.
+
 

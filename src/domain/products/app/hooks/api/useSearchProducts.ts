@@ -8,6 +8,6 @@ export function useSearchProducts(query?: SearchProductsQuery) {
   return useQuery({
     queryKey: ['products-search', query],
     queryFn: () => usecase.execute(query),
-    enabled: !!query?.q, // solo si hay query
+    enabled: !!query?.query,
   })
 }

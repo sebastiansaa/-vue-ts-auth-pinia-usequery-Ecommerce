@@ -1,32 +1,22 @@
-export interface ProductResponse {
-  id: number;
-  name: string;
-  description?: string;
-  price: number;
-  stock: number;
-  imageUrl?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import type { ProductDTO, ProductListDTO } from '@/client/interfacesBackend'
 
-export interface ListProductResponse {
-  products: ProductResponse[]
-  total: number
-}
+export type ProductResponse = ProductDTO
 
-export type ListProductsRequest = {
+export type ListProductResponse = ProductListDTO
+
+export type ListProductsQuery = {
   page?: number
   limit?: number
   categoryId?: number
 }
 
-export type SearchProductsRequest = {
+export type SearchProductsQuery = {
   query: string
   page?: number
   limit?: number
 }
 
-export type CreateProductRequest = {
+export type SaveProductRequest = {
   id?: number
   title: string
   slug: string
@@ -38,7 +28,11 @@ export type CreateProductRequest = {
   categoryId: number
 }
 
+export type SaveProductDto = SaveProductRequest
+
 export type UpdateStockRequest = {
   quantity: number
 }
+
+export type UpdateStockDto = UpdateStockRequest
 

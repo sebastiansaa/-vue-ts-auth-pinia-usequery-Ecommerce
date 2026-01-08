@@ -20,13 +20,12 @@
         <ul class="mini-cart__list">
           <li v-for="item in items" :key="item.productId" class="mini-cart__item">
             <img
-              :src="item.product?.imageUrl || ''"
-              alt=""
+              :src="resolveThumb(item.product)"
+              :alt="item.product?.title ?? 'Producto'"
               class="mini-cart__thumb"
-              v-if="item.product?.imageUrl"
             />
             <div class="mini-cart__meta">
-              <div class="mini-cart__title">{{ item.product?.name ?? 'Producto' }}</div>
+              <div class="mini-cart__title">{{ item.product?.title ?? 'Producto' }}</div>
               <div class="mini-cart__qty">x{{ item.quantity }}</div>
               <div class="mini-cart__price">
                 {{ formatPrice(item.price ?? item.product?.price ?? 0) }}
@@ -60,6 +59,8 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { CartStore } from '../stores/cartStore'
 import { useMiniCartStore } from '../stores/useMiniCartStore'
+import type { ProductResponse } from '@/domain/products/types'
+import { getPrimaryProductImage, PRODUCT_IMAGE_PLACEHOLDER } from '@/domain/products/app/helpers'
 
 const cart = CartStore()
 const miniCart = useMiniCartStore()
@@ -85,6 +86,11 @@ function remove(id: number) {
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price)
+}
+
+function resolveThumb(product?: ProductResponse): string {
+  if (!product) return PRODUCT_IMAGE_PLACEHOLDER
+  return getPrimaryProductImage(product.images)
 }
 </script>
 
